@@ -1,0 +1,58 @@
+\documentclass[a4paper, 9pt]{extarticle}
+% \usepackage[utf8]{inputenc}
+
+% Tiny borders should be default
+\usepackage[a4paper, total={7in, 10.25in}]{geometry}
+
+\setlength {\marginparwidth }{2cm}
+\usepackage{todonotes}
+% Font shit
+\usepackage{fontspec}
+\usepackage{xunicode}
+\usepackage{xcolor}
+\defaultfontfeatures{Ligatures=TeX}
+\setmainfont[
+BoldFont=merriweather-regular.ttf,
+ItalicFont=merriweather-light-italic.ttf,
+BoldItalicFont=merriweather-bold.ttf
+]{merriweather-light.ttf}
+\newfontfamily\secfont{merriweather-sans-regular.ttf}
+\usepackage{titlesec}
+\newcommand{\secstyle}{\secfont\Large\itshape}
+\titleformat{\section}%
+  {\secstyle} % format
+  {\thesection} % label
+  {10pt} % sep
+  {\vspace{-4mm}} % before
+  [\normalfont\vspace{-3mm}] % after
+
+\newcommand{\subsecstyle}{\secfont\large\itshape}
+\titleformat{\subsection}%
+  {\subsecstyle} % format
+  {\thesubsection} % label
+  {10pt} % sep
+  {\vspace{-6pt}} % before
+  [\normalfont\vspace{-3mm}] % after
+
+\usepackage{enumitem}
+% \usepackage{parskip}
+\usepackage{hyphenat}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usepgfplotslibrary{dateplot}
+
+\title{\vspace{-10mm}Advanced Topics in Programming Languages - Paper Overview\vspace{-4mm}}
+\author{Riley Evans (re17105)}
+\date{\vspace{-3mm}}
+
+
+\begin{document}
+\secfont
+\maketitle
+\normalfont
+
+Hi
+
+\end{document}
