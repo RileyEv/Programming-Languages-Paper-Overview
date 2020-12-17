@@ -63,9 +63,16 @@ BoldItalicFont=merriweather-bold.ttf
 
 \section{DSLs}
 
-A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case. This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains. DSLs can be split into two different categories: standalone and embedded. Standalone DSLs require their own compiler and typically have their own syntax. Embedded DSLs use a GPL as a host language, therefore they use the syntax and compiler from that GPL. This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
+A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case.
+This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains.
+DSLs can be split into two different categories: standalone and embedded. Standalone DSLs require their own compiler and typically have their own syntax.
+Embedded DSLs use a GPL as a host language, therefore they use the syntax and compiler from that GPL.
+This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
 
-An embedded DSL can be implemented with two main techniques. Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST). This can then be used to apply optimisations and then evaluated. A second approach is to define the terms as their semantics, avoiding the AST. This approach is referred to as a shallow embedding.
+An embedded DSL can be implemented with two main techniques.
+Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST).
+This can then be used to apply optimisations and then evaluated. A second approach is to define the terms as their semantics, avoiding the AST.
+This approach is referred to as a shallow embedding.
 
 
 \section{Parsers}
@@ -90,47 +97,30 @@ For example, a parser that can parse a or b can be defined as,
 > aorb = (satisfy (=='a')) `or` (satisfy (== 'b'))
 
 
-A deep embedding of this parser language is defined as \textit{Parser2} in the appendix. A function \textit{size} can be defined that finds the size of the AST created in the deep embedding.
+A deep embedding of this parser language is defined in the alegebraic datatype:
 
-> type Size = Int
-> size :: Parser2 a -> Size
-> size  (Empty2)      =  1
-> size  (Pure2 _)     =  1
-> size  (Satisfy2 _)  =  1
-> size  (Try2 px)     =  1 +  size px
-> size  (Ap2 pf px)   =  1 +  size pf  + size px
-> size  (Or2 px py)   =  1 +  size px  + size py
-
-
-TODO: everything below this
+> data Parser2 :: * -> * where
+>   Pure2 :: a -> Parser2 a
+>   Satisfy2 :: (Char -> Bool) -> Parser2 Char
+>   Empty2 :: Parser2 a
+>   Try2 :: Parser2 a -> Parser2 a
+>   Ap2 :: Parser2 (a -> b) -> Parser2 a -> Parser2 b
+>   Or2 :: Parser2 a -> Parser2 a -> Parser2 a
 
 
-
-It is clear that size is a fold over Parser2, hence it is a suitable semantics for a shallow embedding.
-
-
-> type Parser3 a = Int
-> pure3 _ = 1
-> satisfy3 _ = 1
-> empty3 = 1
-> try3 px = px + 1
-> ap3 pf px = pf + pf + 1
-> or3 px py = px + py + 1
->
-> size3 :: Parser3 a -> Size
-> size3 = id
+A function \textit{size} can be defined that finds the size of the AST used to construct the parser - this can be found in the appendix.
+\textit{size} uses a deep embedding, however it is a fold over the datatype, therefore it is also possible to define a shallow embedding for this, which can be again found in the appendix.
 
 
 \section{Folds}
 
-Blah blah
+It is possible to capture the shape of an abstract datatype through the \textif{Functor} type class. By defining an instance of this type class, it is possible to specify where a datatype recurses.
+There is however one problem with using the functor instance for the parser language: parsers require the DSL to be typed as you can have a parser of type \textit{Parser Char}, which is only able to parse a \textit{Char}.
+Using a functor instance does not retain the type of the parser, therefore we have to define a special instance called \textit{IFunctor} to be able to maintain the type indicies. A full definition can be found in the appendix.
+TODO: cite the paper this came from, can't remember its name...
 
-The shape is able to be captured in an instance of the Functor type class.
-In a difference to the paper Parsers are a typed DSL. Therefore, we need to define an instance of the IFunctor type class,
-in order to retain these types. TODO: Type indices
+The shape of \textit{Parser2}, can be seen in \textit{ParserF} where the \textit{k a} marks the recursive spots.
 
-> class IFunctor f where
->   imap :: (forall i . a i -> b i) -> f a i -> f b i
 
 > data ParserF (k :: * -> *) (a :: *) where
 >   PureF    :: a -> ParserF k a
@@ -149,14 +139,14 @@ in order to retain these types. TODO: Type indices
 >   imap f (OrF px py) = OrF (f px) (f py)
 
 
-The paper here attempts to hide its usage of Fix and cata by specifying specialised versions of them for Circuit4.
-Instead, we can just use Fix and cata for clarity.
+The paper then proceeds to define \textit{Circuit4}, this however, is just a specialised version of the \textit{Fix} construct, for clarity \textit{Fix} will be used instead.
+This \textit{Fix} has had to be modified slightly to allow for the type indicies to remain the same.
+Similarly, the paper also defines \textit{foldC}, this is actually a specialised version of a catamorphism, so \textit{cata} can be used instead.
+Both definitions can be found in the appendix.
 
-> newtype Fix f a = In (f (Fix f) a)
 > type Parser4 a = Fix ParserF a
 
-> cata :: IFunctor f => (forall i . f a i -> a i) -> Fix f i -> a i
-> cata alg (In x) = alg (imap (cata alg) x)
+
 
 
 
@@ -308,12 +298,33 @@ TODO
 
 \section{Appendix}
 
-> data Parser_2 :: * -> * where
->   Pure_2 :: a -> Parser_2 a
->   Satisfy_2 :: (Char -> Bool) -> Parser_2 Char
->   Empty_2 :: Parser_2 a
->   Try_2 :: Parser_2 a -> Parser_2 a
->   Ap_2 :: Parser_2 (a -> b) -> Parser_2 a -> Parser_2 b
->   Or_2 :: Parser_2 a -> Parser_2 a -> Parser_2 a
+> type Size = Int
+> size :: Parser2 a -> Size
+> size  (Empty2)      =  1
+> size  (Pure2 _)     =  1
+> size  (Satisfy2 _)  =  1
+> size  (Try2 px)     =  1 +  size px
+> size  (Ap2 pf px)   =  1 +  size pf  + size px
+> size  (Or2 px py)   =  1 +  size px  + size py
+
+
+
+> type Parser3 a = Int
+> pure3 _ = 1
+> satisfy3 _ = 1
+> empty3 = 1
+> try3 px = px + 1
+> ap3 pf px = pf + pf + 1
+> or3 px py = px + py + 1
+>
+> size3 :: Parser3 a -> Size
+> size3 = id
+
+
+> class IFunctor f where
+>   imap :: (forall i . a i -> b i) -> f a i -> f b i
+> newtype Fix f a = In (f (Fix f) a)
+> cata :: IFunctor f => (forall i . f a i -> a i) -> Fix f i -> a i
+> cata alg (In x) = alg (imap (cata alg) x)
 
 \end{document}
