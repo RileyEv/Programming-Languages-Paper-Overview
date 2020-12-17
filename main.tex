@@ -310,138 +310,122 @@ BoldItalicFont=merriweather-bold.ttf
 \secfont
 \maketitle
 \normalfont
+
+
+
+\section{DSLs}
+
+A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case. This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains. DSLs can be split into two different categories: standalone and embedded. Standalone DSLs require their own compiler and typically have their own syntax. Embedded DSLs use a GPL as a host language, therefore they use the syntax and compiler from that GPL. This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
+
+An embedded DSL can be implemented with two main techniques. Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST). This can then be used to apply optimisations and then evaluated. A second approach is to define the terms as their semantics, avoiding the AST. This approach is referred to as a shallow embedding.
+
+
+\section{Parsers}
+In the paper, a circuit language used to describe the different techniques for folding DSLs. For the purposes of this review a new DSL will be introduced - this is a parser DSL. This langauge is made up of 6 terms, they provide all the essential operations needed in a parser.
+
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{48}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mbox{\enskip\{-\# LANGUAGE KindSignatures, GADTs, RankNTypes, LambdaCase  \#-\}\enskip}{}\<[E]%
+\>[3]{}\Varid{empty}{}\<[12]%
+\>[12]{}\mathbin{::}{}\<[48]%
+\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{pure}{}\<[12]%
+\>[12]{}\mathbin{::}\Varid{a}\to {}\<[48]%
+\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{satisfy}{}\<[12]%
+\>[12]{}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to {}\<[48]%
+\>[48]{}\Conid{Parser}\;\Conid{Char}{}\<[E]%
+\\
+\>[3]{}\Varid{try}{}\<[12]%
+\>[12]{}\mathbin{::}\Conid{Parser}\;\Varid{a}\to {}\<[48]%
+\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{ap}{}\<[12]%
+\>[12]{}\mathbin{::}\Conid{Parser}\;(\Varid{a}\to \Varid{b})\to {}\<[35]%
+\>[35]{}\Conid{Parser}\;\Varid{a}\to {}\<[48]%
+\>[48]{}\Conid{Parser}\;\Varid{b}{}\<[E]%
+\\
+\>[3]{}\Varid{or}{}\<[12]%
+\>[12]{}\mathbin{::}\Conid{Parser}\;\Varid{a}\to {}\<[35]%
+\>[35]{}\Conid{Parser}\;\Varid{a}\to {}\<[48]%
+\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+For example, a parser that can parse a or b can be defined as,
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{import}\;\Conid{Prelude}\;\Varid{hiding}\;(\Varid{or}){}\<[E]%
+\>[3]{}\Varid{aorb}\mathbin{::}\Conid{Parser}\;\Conid{Char}{}\<[E]%
+\\
+\>[3]{}\Varid{aorb}\mathrel{=}(\Varid{satisfy}\;(\equiv \text{\ttfamily 'a'}))\mathbin{`\Varid{or}`}(\Varid{satisfy}\;(\equiv \text{\ttfamily 'b'})){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
-The original paper used a language for parallel prefix circuits.
-In this overview another simple DSL will be used to demonstate the techniques described to fold DSLs.
-That language is a simple parser combinator language, it contains the basic operations needed to build
-a larger combinator language.
-
-In the same way as before we can construct parsers using the following operators:
+A deep embedding of this parser language is defined as Parser2 in the appendix. A function size can be defined that finds the size of the AST created in the deep embedding
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{type}\;\Conid{Parser1}\;\Varid{a}\mathrel{=}\Conid{Int}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{pure}\mathbin{::}\Varid{a}\to \Conid{Parser1}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{pure}\mathrel{=}\bot {}\<[E]%
-\\
-\>[3]{}\Varid{satisfy}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{Parser1}\;\Conid{Char}{}\<[E]%
-\\
-\>[3]{}\Varid{satisfy}\mathrel{=}\bot {}\<[E]%
-\\
-\>[3]{}\Varid{empty}\mathbin{::}\Conid{Parser1}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{empty}\mathrel{=}\bot {}\<[E]%
-\\
-\>[3]{}\Varid{try}\mathbin{::}\Conid{Parser1}\;\Varid{a}\to \Conid{Parser1}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{try}\mathrel{=}\bot {}\<[E]%
-\\
-\>[3]{}\Varid{ap}\mathbin{::}\Conid{Parser1}\;(\Varid{a}\to \Varid{b})\to \Conid{Parser1}\;\Varid{a}\to \Conid{Parser1}\;\Varid{b}{}\<[E]%
-\\
-\>[3]{}\Varid{ap}\mathrel{=}\bot {}\<[E]%
-\\
-\>[3]{}\Varid{or}\mathbin{::}\Conid{Parser1}\;\Varid{a}\to \Conid{Parser1}\;\Varid{a}\to \Conid{Parser1}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{or}\mathrel{=}\bot {}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-It is possible to form a parser for the string `a` using
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{a}\mathbin{::}\Conid{Parser1}\;\Conid{Char}{}\<[E]%
-\\
-\>[3]{}\Varid{a}\mathrel{=}\Varid{satisfy}\;(\equiv \text{\ttfamily 'a'}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{b}\mathbin{::}\Conid{Parser1}\;\Conid{Char}{}\<[E]%
-\\
-\>[3]{}\Varid{b}\mathrel{=}\Varid{satisfy}\;(\equiv \text{\ttfamily 'b'}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{aorb}\mathbin{::}\Conid{Parser1}\;\Conid{Char}{}\<[E]%
-\\
-\>[3]{}\Varid{aorb}\mathrel{=}\Varid{a}\mathbin{`\Varid{or}`}\Varid{b}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-We can specify a datatype to represent this parser as a deeply embedded DSL.
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{data}\;\Conid{Parser2}\mathbin{::}\mathbin{*}\to \mathbin{*}\mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Pure2}\mathbin{::}\Varid{a}\to \Conid{Parser2}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Satisfy2}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{Parser2}\;\Conid{Char}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Empty2}\mathbin{::}\Conid{Parser2}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Try2}\mathbin{::}\Conid{Parser2}\;\Varid{a}\to \Conid{Parser2}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Ap2}\mathbin{::}\Conid{Parser2}\;(\Varid{a}\to \Varid{b})\to \Conid{Parser2}\;\Varid{a}\to \Conid{Parser2}\;\Varid{b}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Or2}\mathbin{::}\Conid{Parser2}\;\Varid{a}\to \Conid{Parser2}\;\Varid{a}\to \Conid{Parser2}\;\Varid{a}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-It is simple to define functions to manipulate this deep embedding.
-For example, one could be used to find the size of the parser.
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{23E}{@{}l@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{40}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\mathbf{type}\;\Conid{Size}\mathrel{=}\Conid{Int}{}\<[E]%
 \\
 \>[3]{}\Varid{size}\mathbin{::}\Conid{Parser2}\;\Varid{a}\to \Conid{Size}{}\<[E]%
 \\
-\>[3]{}\Varid{size}\;(\Conid{Pure2}\;\anonymous )\mathrel{=}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{size}\;{}\<[9]%
+\>[9]{}(\Conid{Empty2}){}\<[23]%
+\>[23]{}\mathrel{=}{}\<[23E]%
+\>[26]{}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{size}\;(\Conid{Satisfy2}\;\anonymous )\mathrel{=}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{size}\;{}\<[9]%
+\>[9]{}(\Conid{Pure2}\;\anonymous ){}\<[23]%
+\>[23]{}\mathrel{=}{}\<[23E]%
+\>[26]{}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{size}\;\Conid{Empty2}\mathrel{=}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{size}\;{}\<[9]%
+\>[9]{}(\Conid{Satisfy2}\;\anonymous ){}\<[23]%
+\>[23]{}\mathrel{=}{}\<[23E]%
+\>[26]{}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{size}\;(\Conid{Try2}\;\Varid{px})\mathrel{=}\mathrm{1}\mathbin{+}\Varid{size}\;\Varid{px}{}\<[E]%
+\>[3]{}\Varid{size}\;{}\<[9]%
+\>[9]{}(\Conid{Try2}\;\Varid{px}){}\<[23]%
+\>[23]{}\mathrel{=}{}\<[23E]%
+\>[26]{}\mathrm{1}\mathbin{+}{}\<[31]%
+\>[31]{}\Varid{size}\;\Varid{px}{}\<[E]%
 \\
-\>[3]{}\Varid{size}\;(\Conid{Ap2}\;\Varid{pf}\;\Varid{px})\mathrel{=}\Varid{size}\;\Varid{pf}\mathbin{+}\Varid{size}\;\Varid{px}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{size}\;{}\<[9]%
+\>[9]{}(\Conid{Ap2}\;\Varid{pf}\;\Varid{px}){}\<[23]%
+\>[23]{}\mathrel{=}{}\<[23E]%
+\>[26]{}\mathrm{1}\mathbin{+}{}\<[31]%
+\>[31]{}\Varid{size}\;\Varid{pf}{}\<[40]%
+\>[40]{}\mathbin{+}\Varid{size}\;\Varid{px}{}\<[E]%
 \\
-\>[3]{}\Varid{size}\;(\Conid{Or2}\;\Varid{px}\;\Varid{py})\mathrel{=}\Varid{size}\;\Varid{px}\mathbin{+}\Varid{size}\;\Varid{py}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{size}\;{}\<[9]%
+\>[9]{}(\Conid{Or2}\;\Varid{px}\;\Varid{py}){}\<[23]%
+\>[23]{}\mathrel{=}{}\<[23E]%
+\>[26]{}\mathrm{1}\mathbin{+}{}\<[31]%
+\>[31]{}\Varid{size}\;\Varid{px}{}\<[40]%
+\>[40]{}\mathbin{+}\Varid{size}\;\Varid{py}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+We can specify a datatype to represent this parser as a deeply embedded DSL.
+
+
+It is simple to define functions to manipulate this deep embedding.
+For example, one could be used to find the size of the parser.
+
+
 
 It is clear that size is a fold over Parser2, hence it is a suitable semantics for a shallow embedding.
 
@@ -859,4 +843,32 @@ TODO
 \end{hscode}\resethooks
 \bibliography{biblo}
 
+
+\section{Appendix}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{data}\;\Conid{Parser\char95 2}\mathbin{::}\mathbin{*}\to \mathbin{*}\mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Pure\char95 2}\mathbin{::}\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Satisfy\char95 2}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{Parser\char95 2}\;\Conid{Char}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Empty\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Try\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Ap\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;(\Varid{a}\to \Varid{b})\to \Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{b}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Or\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
 \end{document}

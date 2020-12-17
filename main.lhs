@@ -53,68 +53,57 @@ BoldItalicFont=merriweather-bold.ttf
 \maketitle
 \normalfont
 
+%if False
+
 > {-# LANGUAGE KindSignatures, GADTs, RankNTypes, LambdaCase #-}
-
-
 > import Prelude hiding (or)
 
-
-The original paper used a language for parallel prefix circuits.
-In this overview another simple DSL will be used to demonstate the techniques described to fold DSLs.
-That language is a simple parser combinator language, it contains the basic operations needed to build
-a larger combinator language.
-
-In the same way as before we can construct parsers using the following operators:
-
-> type Parser1 a = Int
->
-> pure :: a -> Parser1 a
-> pure = undefined
-> satisfy :: (Char -> Bool) -> Parser1 Char
-> satisfy = undefined
-> empty :: Parser1 a
-> empty = undefined
-> try :: Parser1 a -> Parser1 a
-> try = undefined
-> ap :: Parser1 (a -> b) -> Parser1 a -> Parser1 b
-> ap = undefined
-> or :: Parser1 a -> Parser1 a -> Parser1 a
-> or = undefined
+%endif
 
 
-It is possible to form a parser for the string `a` using
+\section{DSLs}
 
-> a :: Parser1 Char
-> a = satisfy (== 'a')
+A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case. This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains. DSLs can be split into two different categories: standalone and embedded. Standalone DSLs require their own compiler and typically have their own syntax. Embedded DSLs use a GPL as a host language, therefore they use the syntax and compiler from that GPL. This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
 
-> b :: Parser1 Char
-> b = satisfy (== 'b')
-
-> aorb :: Parser1 Char
-> aorb = a `or` b
+An embedded DSL can be implemented with two main techniques. Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST). This can then be used to apply optimisations and then evaluated. A second approach is to define the terms as their semantics, avoiding the AST. This approach is referred to as a shallow embedding.
 
 
-We can specify a datatype to represent this parser as a deeply embedded DSL.
+\section{Parsers}
+In the paper, a circuit language used to describe the different techniques for folding DSLs. For the purposes of this review a new DSL will be introduced - this is a parser DSL. This langauge is made up of 6 terms, they provide all the essential operations needed in a parser.
 
-> data Parser2 :: * -> * where
->   Pure2 :: a -> Parser2 a
->   Satisfy2 :: (Char -> Bool) -> Parser2 Char
->   Empty2 :: Parser2 a
->   Try2 :: Parser2 a -> Parser2 a
->   Ap2 :: Parser2 (a -> b) -> Parser2 a -> Parser2 b
->   Or2 :: Parser2 a -> Parser2 a -> Parser2 a
+%if False
 
-It is simple to define functions to manipulate this deep embedding.
-For example, one could be used to find the size of the parser.
+> type Parser a = Int
+
+%endif
+
+> empty    ::                                  Parser a
+> pure     :: a ->                             Parser a
+> satisfy  :: (Char -> Bool) ->                Parser Char
+> try      :: Parser a ->                      Parser a
+> ap       :: Parser (a -> b) ->  Parser a ->  Parser b
+> or       :: Parser a ->         Parser a ->  Parser a
+
+For example, a parser that can parse a or b can be defined as,
+
+> aorb :: Parser Char
+> aorb = (satisfy (=='a')) `or` (satisfy (== 'b'))
+
+
+A deep embedding of this parser language is defined as \textit{Parser2} in the appendix. A function \textit{size} can be defined that finds the size of the AST created in the deep embedding.
 
 > type Size = Int
 > size :: Parser2 a -> Size
-> size (Pure2 _) = 1
-> size (Satisfy2 _) = 1
-> size Empty2 = 1
-> size (Try2 px) = 1 + size px
-> size (Ap2 pf px) = size pf + size px + 1
-> size (Or2 px py) = size px + size py + 1
+> size  (Empty2)      =  1
+> size  (Pure2 _)     =  1
+> size  (Satisfy2 _)  =  1
+> size  (Try2 px)     =  1 +  size px
+> size  (Ap2 pf px)   =  1 +  size pf  + size px
+> size  (Or2 px py)   =  1 +  size px  + size py
+
+
+TODO: everything below this
+
 
 
 It is clear that size is a fold over Parser2, hence it is a suitable semantics for a shallow embedding.
@@ -315,5 +304,16 @@ TODO
 > main = undefined
 
 \bibliography{biblo}
+
+
+\section{Appendix}
+
+> data Parser_2 :: * -> * where
+>   Pure_2 :: a -> Parser_2 a
+>   Satisfy_2 :: (Char -> Bool) -> Parser_2 Char
+>   Empty_2 :: Parser_2 a
+>   Try_2 :: Parser_2 a -> Parser_2 a
+>   Ap_2 :: Parser_2 (a -> b) -> Parser_2 a -> Parser_2 b
+>   Or_2 :: Parser_2 a -> Parser_2 a -> Parser_2 a
 
 \end{document}
