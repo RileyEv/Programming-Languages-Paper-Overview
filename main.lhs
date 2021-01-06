@@ -1,4 +1,5 @@
-\documentclass[a4paper, twocolumn, 9pt]{extarticle}
+%TC:envir hscode [] ignore
+\documentclass[a4paper, twocolumn, 10pt]{extarticle}
 
 % Tiny borders should be default
 \usepackage[a4paper, total={7in, 10.25in}]{geometry}
@@ -9,49 +10,28 @@
 \usepackage{fontspec}
 \usepackage{xunicode}
 \usepackage{xcolor}
-\defaultfontfeatures{Ligatures=TeX}
-\setmainfont[
-BoldFont=merriweather-regular.ttf,
-ItalicFont=merriweather-light-italic.ttf,
-BoldItalicFont=merriweather-bold.ttf
-]{merriweather-light.ttf}
-\newfontfamily\secfont{merriweather-sans-regular.ttf}
-\usepackage{titlesec}
-\newcommand{\secstyle}{\secfont\Large\itshape}
-\titleformat{\section}%
-  {\secstyle} % format
-  {\thesection} % label
-  {10pt} % sep
-  {} % before
-  [\normalfont] % after
 
-\newcommand{\subsecstyle}{\secfont\large\itshape}
-\titleformat{\subsection}%
-  {\subsecstyle} % format
-  {\thesubsection} % label
-  {10pt} % sep
-  {} % before
-  [\normalfont] % after
+\usepackage{libertine}
+
+
+\usepackage{biblatex}
+\bibliography{biblo}
+
 
 \usepackage{enumitem}
-% \usepackage{parskip}
 \usepackage{hyphenat}
 
-\usepackage{pgfplots}
-\pgfplotsset{compat=newest}
-\usepgfplotslibrary{groupplots}
-\usepgfplotslibrary{dateplot}
 
-\title{\vspace{-10mm}Advanced Topics in Programming Languages - Paper Overview\vspace{-4mm}}
+\title{\vspace{-10mm}An Overview of \textit{\citefield{embedding}{title}}\vspace{-4mm}}
 \author{Riley Evans (re17105)}
 \date{\vspace{-3mm}}
  
 %include polycode.fmt
+%include forall.fmt
+%include lambda.fmt
 
 \begin{document}
-\secfont
 \maketitle
-\normalfont
 
 %if False
 
@@ -60,8 +40,33 @@ BoldItalicFont=merriweather-bold.ttf
 
 %endif
 
+\section{Introduction}
 
-\section{DSLs}
+This is an overview of the techniques described in the paper \textit{\citefield{embedding}{title}}.
+The paper demonstrates a series of techniques that can be used when folding Domain Specific Languges.
+It does so through the use os a simple parallel prefic circuit language~\cite{scans}.
+
+
+In this overview a small parser combinator language will be used.
+This language brings one key feature that was not described in the paper: how to apply these techniques to a typed language.
+Only a minimal functionally complete set of combinators have been included in the language to keep it simple.
+However, all other combinators usually found in a combinator language can be contructed from this set.
+
+
+%% The paper takes an example Domain Specific Language and then demonstrates a series of techniques that are helpful for folding them.
+
+
+
+
+
+%% What is the paper? What are its core ideas?
+
+%% How will the techniques be demoed? Pros/Cons of why they are useful for the parsing language.
+
+
+\section{Background}
+
+\subsection{DSLs}
 
 A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case.
 This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains.
@@ -70,13 +75,20 @@ Embedded DSLs use a GPL as a host language, therefore they use the syntax and co
 This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
 
 An embedded DSL can be implemented with two main techniques.
-Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST).
-This can then be used to apply optimisations and then evaluated. A second approach is to define the terms as their semantics, avoiding the AST.
-This approach is referred to as a shallow embedding.
+Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST) as a host language datatype.
+This can then be used to apply optimisations and then evaluated.
+A second approach is to define the terms as first class components of the language, avoiding the creation of an AST - this is known as a shallow embedding.
 
 
-\section{Parsers}
-In the paper, a circuit language used to describe the different techniques for folding DSLs. For the purposes of this review a new DSL will be introduced - this is a parser DSL. This langauge is made up of 6 terms, they provide all the essential operations needed in a parser.
+\subsection{Parsers}
+
+A parser is a used to convert a series of tokens into another language.
+For example converting a string into a Haskell datatype.
+Parser combinators provide a flexible approach to constructing parsers.
+Unlike parser generators, a combinator library is embedded within a host language: using combinators to construct the grammar.
+This makes it a suitable to demonstrate the techniques descriped in this paper for folding the DSL to create parsers.
+
+The langauge is made up of 6 terms, they provide all the essential operations needed in a parser.
 
 %if False
 
@@ -84,182 +96,213 @@ In the paper, a circuit language used to describe the different techniques for f
 
 %endif
 
-> empty    ::                                  Parser a
-> pure     :: a ->                             Parser a
-> satisfy  :: (Char -> Bool) ->                Parser Char
-> try      :: Parser a ->                      Parser a
-> ap       :: Parser (a -> b) ->  Parser a ->  Parser b
-> or       :: Parser a ->         Parser a ->  Parser a
+> empty    :: Parser a
+> pure     :: a                ->  Parser a
+> satisfy  :: (Char -> Bool)   ->  Parser Char
+> try      :: Parser a         ->  Parser a
+> ap       :: Parser (a -> b)  ->  Parser a  ->  Parser b
+> or       :: Parser a         ->  Parser a  ->  Parser a
 
-For example, a parser that can parse a or b can be defined as,
+%if False
+
+> empty = undefined
+> pure = undefined
+> satisfy = undefined
+> try = undefined
+> ap = undefined
+> or = undefined
+
+%endif
+
+
+For example, a parser that can parse the characters |'a'| or |'b'| can be defined as,
 
 > aorb :: Parser Char
-> aorb = (satisfy (=='a')) `or` (satisfy (== 'b'))
+> aorb = satisfy (== 'a') `or` satisfy (== 'b')
 
 
 A deep embedding of this parser language is defined in the alegebraic datatype:
 
-> data Parser2 :: * -> * where
->   Pure2 :: a -> Parser2 a
->   Satisfy2 :: (Char -> Bool) -> Parser2 Char
->   Empty2 :: Parser2 a
->   Try2 :: Parser2 a -> Parser2 a
->   Ap2 :: Parser2 (a -> b) -> Parser2 a -> Parser2 b
->   Or2 :: Parser2 a -> Parser2 a -> Parser2 a
+%format Parser2
+%format Empty2
+%format Pure2
+%format Satisfy2
+%format Try2
+%format Ap2
+%format Or2
+
+> data Parser2 (a :: *) where
+>   Empty2    ::  Parser2 a
+>   Pure2     ::  a                 ->  Parser2 a
+>   Satisfy2  ::  (Char -> Bool)    ->  Parser2 Char
+>   Try2      ::  Parser2 a         ->  Parser2 a
+>   Ap2       ::  Parser2 (a -> b)  ->  Parser2 a  ->  Parser2 b
+>   Or2       ::  Parser2 a         ->  Parser2 a  ->  Parser2 a
 
 
-A function \textit{size} can be defined that finds the size of the AST used to construct the parser - this can be found in the appendix.
-\textit{size} uses a deep embedding, however it is a fold over the datatype, therefore it is also possible to define a shallow embedding for this, which can be again found in the appendix.
+This can be interpretted by defining a function such as |size|, that finds the size of the AST used to construct the parser - this can be found in the appendix.
+|size| interprets the deep embedding, by folding over the datatype.
+See the appendix for how to add an interpretation with a shallow embedding.
 
 
 \section{Folds}
 
-It is possible to capture the shape of an abstract datatype through the \textif{Functor} type class. By defining an instance of this type class, it is possible to specify where a datatype recurses.
-There is however one problem with using the functor instance for the parser language: parsers require the DSL to be typed as you can have a parser of type \textit{Parser Char}, which is only able to parse a \textit{Char}.
-Using a functor instance does not retain the type of the parser, therefore we have to define a special instance called \textit{IFunctor} to be able to maintain the type indicies. A full definition can be found in the appendix.
-TODO: cite the paper this came from, can't remember its name...
+It is possible to capture the shape of an abstract datatype through the |Functor| type class.
+It is possible to capture the shape of an abstract datatype as a |Functor|.
+The use of a |Functor| allows for the specification of where a datatype recurses.
+There is however one problem, a functor expresing the parser language is required to be typed.
+Parsers require the type of the tokens being parsed.
+For example a parser reading tokens that make up an expression could have the type |Parser Expr|.
+A functor does not retain the type of the parser, therefore it is required to define a special type class called |IFunctor|, which is able to maintain the type indicies~\cite{mcbride2011functional}.
+A full definition can be found in the appendix.
 
-The shape of \textit{Parser2}, can be seen in \textit{ParserF} where the \textit{k a} marks the recursive spots.
+The shape of |Parser2|, can be seen in |ParserF| where the |k a| marks the recursive spots.
 
 
 > data ParserF (k :: * -> *) (a :: *) where
->   PureF    :: a -> ParserF k a
->   SatisfyF :: (Char -> Bool) -> ParserF k Char
 >   EmptyF   :: ParserF k a
->   TryF     :: k a -> ParserF k a
->   ApF :: k (a -> b) -> k a -> ParserF k b
->   OrF :: k a -> k a -> ParserF k a
+>   PureF    :: a               -> ParserF k a
+>   SatisfyF :: (Char -> Bool)  -> ParserF k Char
+>   TryF     :: k a             -> ParserF k a
+>   ApF      :: k (a -> b)      -> k a   -> ParserF k b
+>   OrF      :: k a             -> k a   -> ParserF k a
 
 > instance IFunctor ParserF where
->   imap _ EmptyF = EmptyF
->   imap _ (SatisfyF c) = SatisfyF c
->   imap _ (PureF x) = PureF x
->   imap f (TryF px) = TryF (f px)
->   imap f (ApF pf px) = ApF (f pf) (f px)
->   imap f (OrF px py) = OrF (f px) (f py)
+>   imap _ EmptyF        = EmptyF
+>   imap _ (PureF x)     = PureF     x
+>   imap _ (SatisfyF c)  = SatisfyF  c
+>   imap f (TryF px)     = TryF  (f px)
+>   imap f (ApF pf px)   = ApF   (f pf)  (f px)
+>   imap f (OrF px py)   = OrF   (f px)  (f py)
 
+%format Parser4
 
-The paper then proceeds to define \textit{Circuit4}, this however, is just a specialised version of the \textit{Fix} construct, for clarity \textit{Fix} will be used instead.
-This \textit{Fix} has had to be modified slightly to allow for the type indicies to remain the same.
-Similarly, the paper also defines \textit{foldC}, this is actually a specialised version of a catamorphism, so \textit{cata} can be used instead.
-Both definitions can be found in the appendix.
+|Fix| is used to get the fixed point of the functor.
+It contains the structure needed to make the datatype recursive.
+|Parser4| is the fixed point of |ParserF|.
 
 > type Parser4 a = Fix ParserF a
 
+A mechanism is now required for folding this abstract datatype.
+This is possible through the use of a catamorphism, which is a generalised way of folding an abstract datatype.
+Therefore, the |cata| function can be used - a definition can be found in the appendix.
 
 
+Now all the building blocks have been defined that allow for the folding of the parser DSL.
+|size| can be defined as a fold, which is determined by the |sizeAlg|.
+Due to parsers being a typed language, a constant functor is required to preserve the type indicies.
 
+%format size4
 
-Now we have all the building blocks needed to start folding our parser DSL.
-Size can be defined as a fold, which can be determined by the sizeAlg
-
-> newtype Const a i = Const a
-> unConst :: Const a i -> a
-> unConst (Const x) = x
-
-> sizeAlg :: ParserF (Const Size) a -> Const Size a
-> sizeAlg (PureF _) = Const 1
-> sizeAlg (SatisfyF _) = Const 1
-> sizeAlg EmptyF = Const 1
-> sizeAlg (TryF (Const n)) = Const (n + 1)
-> sizeAlg (ApF (Const pf) (Const px)) = Const (pf + px + 1)
-> sizeAlg (OrF (Const px) (Const py)) = Const (px + py + 1)
-
+> newtype C a i = C { unConst :: a}
+>
+> sizeAlg :: ParserF (C Size) a -> C Size a
+> sizeAlg EmptyF         = C 1
+> sizeAlg (PureF     _)  = C 1
+> sizeAlg (SatisfyF  _)  = C 1
+> sizeAlg (TryF (C n))   = C $ n + 1
+> sizeAlg (ApF (C pf) (C px)) = C $ pf + px + 1
+> sizeAlg (OrF (C px) (C py)) = C $ px + py + 1
+>
 > size4 :: Parser4 a -> Size
 > size4 = unConst . cata sizeAlg
 
 
-\section{Multi}
+\subsection{Multiple Interpretations}
 
+In DSLs it is common to want to evaluate multiple interpretations.
+For example, a parser may also want to know the maximum characters it will read (maximum munch).
+In a deep embedding this is simple, a second algebra can be defined.
 
-A common thing with DSLs is to evaluate multiple interpretations.
-For example, a parser may also want to know the maximum characters it will read.
-In a deep embedding this is simple, we just provide a second algebra.
+%format maxMunch4
 
-> type MaxMunch = Int
+> type MM = Int
 >
-> maxMunchAlg :: ParserF (Const MaxMunch) a -> Const MaxMunch a
-> maxMunchAlg (PureF _)                   = Const 0
-> maxMunchAlg  EmptyF                     = Const 0
-> maxMunchAlg (SatisfyF c)                = Const 1
-> maxMunchAlg (TryF (Const px))           = Const px
-> maxMunchAlg (ApF (Const pf) (Const px)) = Const (pf + px)
-> maxMunchAlg (OrF (Const px) (Const py)) = Const (max px py)
+> mmAlg :: ParserF (C MM) a -> C MM a
+> mmAlg (PureF _)           = C 0
+> mmAlg  EmptyF             = C 0
+> mmAlg (SatisfyF c)        = C 1
+> mmAlg (TryF (C px))       = C px
+> mmAlg (ApF (C pf) (C px)) = C $ pf + px
+> mmAlg (OrF (C px) (C py)) = C $ max px py
+>
+> maxMunch4 :: Parser4 a -> MM
+> maxMunch4 = unConst . cata mmAlg
 
-> maxMunch4 :: Parser4 a -> MaxMunch
-> maxMunch4 = unConst . cata maxMunchAlg
+However, in a shallow embedding it is not as easy.
+To be able to evaluate both semantics a pair can be used, with both interpretations being evaluated simultaneously.
+If many semantics are required this can become cumbersome to define.
 
-But what about a shallow embedding? So far we have only seen parsers be able to have single semantics,
-so how could we calculate both the maxMunch and size of a parser? It turns out the solution is simple,
-we can use a pair and calculate both interpretations simulataneously.
+%format Parser5
+%format size5
+%format maxMunch5
 
-> type Parser5 = (Size, MaxMunch)
-
+> type Parser5 = (Size, MM)
+>
 > size5 :: Parser5 -> Size
 > size5 = fst
-
+>
 > maxMunch5 :: Parser5 -> Size
 > maxMunch5 = snd
-
-> sizeMaxMunchAlg :: ParserF (Const (Size, MaxMunch)) a -> Const (Size, MaxMunch) a
-> sizeMaxMunchAlg (PureF _)                                = Const (1,          0)
-> sizeMaxMunchAlg  EmptyF                                  = Const (1,          0)
-> sizeMaxMunchAlg (SatisfyF c)                             = Const (1,          1)
-> sizeMaxMunchAlg (TryF (Const (s, mm)))                   = Const (s + 1,      mm)
-> sizeMaxMunchAlg (ApF  (Const (s, mm)) (Const (s', mm'))) = Const (s + s' + 1, mm + mm')
-> sizeMaxMunchAlg (OrF  (Const (s, mm)) (Const (s', mm'))) = Const (s + s' + 1, max mm mm')
-
-
-Although this is an algebra, you are able to glean the shallow embedding from this, for example:
-
-> ap5 pf px = sizeMaxMunchAlg (ApF pf px)
+>
+> smmAlg :: ParserF (C (Size, MM)) a ->  C (Size, MM) a
+> smmAlg (PureF _)           = C (1,      0)
+> smmAlg EmptyF              = C (1,      0)
+> smmAlg (SatisfyF c)        = C (1,      1)
+> smmAlg (TryF (C (s, mm)))  = C (s + 1,  mm)
+> smmAlg (ApF  (C (s, mm)) (C (s', mm')))
+>   = C (s + s' + 1, mm + mm')
+> smmAlg (OrF  (C (s, mm)) (C (s', mm')))
+>   = C (s + s' + 1, max mm mm')
 
 
-\section{dependent}
+Although this is an algebra, you are able to learn the shallow embedding from this, for example:
+
+%format ap5
+%format or5
+
+> ap5 pf px = smmAlg (ApF pf px)
+> or5 px py = smmAlg (OrF px py)
+
+
+\subsection{Dependent Interpretations}
 
 zygomorphisms
 
-TODO: something in parsley. \cite{10.1145/3409002}
+TODO: something in parsley. \cite{parsley}
 
 % https://github.com/J-mie6/ParsleyHaskell/blob/abe5df58cca05d8825036790f9c138183fe852b1/Parsley/Frontend/CombinatorAnalyser.hs#L70
 
 
-\section{Context Sensitive}
+\subsection{Context-sensitive Interpretations}
 
 
 Parsers themselves inherently require context sensitive interpretations - what you can parse will
 decide what you are able to parse in latter points of the parser.
 
-Using the semantics from https://github.com/zenzike/yoda we are able to implement a simple parser using an accumulating fold.
+Using the semantics from~\cite{wuYoda} we are able to implement a simple parser using an accumulating fold.
 
 
-> newtype Yoda a = Yoda {unYoda :: String -> [(a, String)]}
-
--- > newtype Yoda a = Yoda (String -> [(a, String)])
--- > unYoda :: Yoda a -> (String -> [(a, String)])
--- > unYoda (Yoda px) = px
+> newtype Y a = Y {unYoda :: String -> [(a, String)]}
 
 
-> yodaAlg :: ParserF Yoda a -> Yoda a
-> yodaAlg (PureF x) = Yoda (\ts -> [(x, ts)])
-> yodaAlg  EmptyF   = Yoda (const [])
-> yodaAlg (SatisfyF c) = Yoda (\case
->   []     -> []
->   (t:ts') -> [(t, ts') | c t])
-> yodaAlg (TryF px) = px
-> yodaAlg (ApF (Yoda pf) (Yoda px)) = Yoda (\ts -> [(f x, ts'') | (f, ts')  <- pf ts
->                                                               , (x, ts'') <- px ts'])
-> yodaAlg (OrF (Yoda px) (Yoda py)) = Yoda (\ts -> px ts ++ py ts)
-
-
+> yAlg :: ParserF Y a -> Y a
+> yAlg (PureF x)     = Y $ \ts -> [(x, ts)]
+> yAlg  EmptyF       = Y $ const []
+> yAlg (SatisfyF c)  = Y $ \ case
+>   []       -> []
+>   (t:ts')  -> [(t, ts') | c t]
+> yAlg (TryF px)     = px
+> yAlg (ApF (Y pf) (Y px)) = Y $ \ts ->
+>   [(f x, ts'')  |   (f,  ts')   <- pf ts
+>                 ,   (x,  ts'')  <- px ts']
+> yAlg (OrF (Y px) (Y py)) = Y $ \ts -> px ts ++ py ts
+>
 > parse :: Parser4 a -> (String -> [(a, String)])
-> parse = unYoda . cata yodaAlg
+> parse = unYoda . cata yAlg
 
 
-> newtype Parsec a = Parsec (String -> [String]) -- not correct
-
-
-\section{Parameterized}
+\subsection{Parameterized Interpretations}
 
 Previously we saw how to add multiple types of interpretations to a shallow embedding. We used pairs to allow us to have two interpretations.
 However, this doesn't extend very well to many more interpretations. Language support starts to fade for larger tuples and it will begin to become messy.
@@ -267,22 +310,41 @@ However, this doesn't extend very well to many more interpretations. Language su
 We already know that shallow embeddings are folds, so we could create a shallow embedding that is in terms of a single parameterized interterpretation.
 
 
-> newtype Parser7 i = P7 {unP7 :: forall a . ( forall j . ParserF a j -> a j) -> a i}
+%format Parser7
+%format pure7
+%format empty7
+%format satisfy7
+%format try7
+%format ap7
+%format or7
+
+> newtype Parser7 i = P7
+>   {unP7 :: forall a . ( forall j . ParserF a j -> a j) -> a i}
 >
 > pure7 :: i -> Parser7 i
 > pure7 x = P7 (\h -> h (PureF x))
+>
 > empty7 :: Parser7 a
 > empty7 = P7 (\h -> h EmptyF)
+>
+> satisfy7 :: (Char -> Bool) -> Parser7 Char
 > satisfy7 c = P7 (\h -> h (SatisfyF c))
+>
 > try7 :: Parser7 a -> Parser7 a
 > try7 px = P7 (\h -> h (TryF (unP7 px h)))
+>
 > ap7 :: Parser7 (a -> b) -> Parser7 a -> Parser7 b
 > ap7 pf px = P7 (\h -> h (ApF (unP7 pf h) (unP7 px h)))
+>
+> or7 :: Parser7 a -> Parser7 a -> Parser7 a
 > or7 px py = P7 (\h -> h (OrF (unP7 px h) (unP7 py h)))
 
 
-\section{Implicitly Parameterized}
+\subsection{Implicitly Parameterized Interpretations}
 
+TODO
+
+\subsection{Modular Interpretations}
 
 TODO
 
@@ -290,23 +352,26 @@ TODO
 
 
 
-> main :: IO ()
-> main = undefined
-
-\bibliography{biblo}
+\printbibliography
 
 
 \section{Appendix}
 
+%if False
+
+> main :: IO ()
+> main = undefined
+
+%endif
+
 > type Size = Int
 > size :: Parser2 a -> Size
-> size  (Empty2)      =  1
+> size  Empty2        =  1
 > size  (Pure2 _)     =  1
 > size  (Satisfy2 _)  =  1
 > size  (Try2 px)     =  1 +  size px
 > size  (Ap2 pf px)   =  1 +  size pf  + size px
 > size  (Or2 px py)   =  1 +  size px  + size py
-
 
 
 > type Parser3 a = Int
@@ -323,6 +388,7 @@ TODO
 
 > class IFunctor f where
 >   imap :: (forall i . a i -> b i) -> f a i -> f b i
+>
 > newtype Fix f a = In (f (Fix f) a)
 > cata :: IFunctor f => (forall i . f a i -> a i) -> Fix f i -> a i
 > cata alg (In x) = alg (imap (cata alg) x)

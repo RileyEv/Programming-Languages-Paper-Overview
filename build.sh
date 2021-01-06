@@ -1,6 +1,5 @@
 lhs2tex main.lhs > main.tex
 
 xelatex main
-bibtex main
-xelatex main
+biber main
 xelatex main

@@ -1,3 +1,9 @@
 *.aux
 *.log
 *.ptb
+*.bbl
+*.blg
+*.log
+*.ptb
+*.xml
+*.bcf

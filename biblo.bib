@@ -1,4 +1,24 @@
-@article{10.1145/3409002,
+@inproceedings{embedding,
+  title =        "Folding Domain-Specific Languages: Deep and Shallow
+                  Embeddings",
+  author =       "Jeremy Gibbons and Nicolas Wu",
+  year =         2014,
+  booktitle =    "International Conference on Functional Programming",
+  month =        "September",
+  pages =        "339-347",
+  url =
+                  "http://www.cs.ox.ac.uk/jeremy.gibbons/publications/embedding.pdf",
+  doi =          "10.1145/2628136.2628138",
+}
+
+@article{mcbride2011functional,
+  title =        {Functional pearl: Kleisli arrows of outrageous fortune},
+  author =       {McBride, Conor},
+  journal =      {Journal of Functional Programming (accepted for publication)},
+  year =         2011
+}
+
+@article{parsley,
   author =       {Willis, Jamie and Wu, Nicolas and Pickering, Matthew},
   title =        {Staged Selective Parser Combinators},
   year =         2020,
@@ -29,4 +49,45 @@
   articleno =    120,
   numpages =     30,
   keywords =     {parsers, meta-programming, combinators}
+}
+
+@InProceedings{scans,
+  author =       "Hinze, Ralf",
+  editor =       "Kozen, Dexter",
+  title =        "An Algebra of Scans",
+  booktitle =    "Mathematics of Program Construction",
+  year =         2004,
+  publisher =    "Springer Berlin Heidelberg",
+  address =      "Berlin, Heidelberg",
+  pages =        "186--210",
+  abstract =     "A parallel prefix circuit takes n inputs x1, x2, ..., xnand
+                  produces the n outputs x1, x1 ∘ x2, ...,
+                  x1{\thinspace}∘{\thinspace}x2{\thinspace}∘{\thinspace}⋯{\thinspace}∘{\thinspace}xn,
+                  where'∘' is an arbitrary associative binary operation.
+                  Parallel prefix circuits and their counterparts in software,
+                  parallel prefix computations or scans, have numerous
+                  applications ranging from fast integer addition over parallel
+                  sorting to convex hull problems. A parallel prefix circuit can
+                  be implemented in a variety of ways taking into account
+                  constraints on size, depth, or fan-out. Traditionally,
+                  implementations are either defined graphically or by
+                  enumerating the underlying graph. Both approaches have their
+                  pros and cons. A figure if well drawn conveys the possibly
+                  recursive structure of the scan but it is not amenable to
+                  formal manipulation. A description in form of a graph while
+                  rigorous obscures the structure of a scan and is equally hard
+                  to manipulate. In this paper we show that parallel prefix
+                  circuits enjoy a very pleasant algebra. Using only two basic
+                  building blocks and four combinators all standard designs can
+                  be described succinctly and rigorously. The rules of the
+                  algebra allow us to prove the circuits correct and to derive
+                  circuit designs in a systematic manner.",
+  isbn =         "978-3-540-27764-4"
+}
+
+@misc{wuYoda,
+  title =        {Yoda: A simple combinator library},
+  url =          {https://github.com/zenzike/yoda},
+  journal =      {GitHub},
+  author =       {Wu, Nicolas}
 }

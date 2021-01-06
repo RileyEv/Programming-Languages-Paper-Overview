@@ -1,4 +1,5 @@
-\documentclass[a4paper, twocolumn, 9pt]{extarticle}
+%TC:envir hscode [] ignore
+\documentclass[a4paper, twocolumn, 10pt]{extarticle}
 
 % Tiny borders should be default
 \usepackage[a4paper, total={7in, 10.25in}]{geometry}
@@ -9,40 +10,19 @@
 \usepackage{fontspec}
 \usepackage{xunicode}
 \usepackage{xcolor}
-\defaultfontfeatures{Ligatures=TeX}
-\setmainfont[
-BoldFont=merriweather-regular.ttf,
-ItalicFont=merriweather-light-italic.ttf,
-BoldItalicFont=merriweather-bold.ttf
-]{merriweather-light.ttf}
-\newfontfamily\secfont{merriweather-sans-regular.ttf}
-\usepackage{titlesec}
-\newcommand{\secstyle}{\secfont\Large\itshape}
-\titleformat{\section}%
-  {\secstyle} % format
-  {\thesection} % label
-  {10pt} % sep
-  {} % before
-  [\normalfont] % after
 
-\newcommand{\subsecstyle}{\secfont\large\itshape}
-\titleformat{\subsection}%
-  {\subsecstyle} % format
-  {\thesubsection} % label
-  {10pt} % sep
-  {} % before
-  [\normalfont] % after
+\usepackage{libertine}
+
+
+\usepackage{biblatex}
+\bibliography{biblo}
+
 
 \usepackage{enumitem}
-% \usepackage{parskip}
 \usepackage{hyphenat}
 
-\usepackage{pgfplots}
-\pgfplotsset{compat=newest}
-\usepgfplotslibrary{groupplots}
-\usepgfplotslibrary{dateplot}
 
-\title{\vspace{-10mm}Advanced Topics in Programming Languages - Paper Overview\vspace{-4mm}}
+\title{\vspace{-10mm}An Overview of \textit{\citefield{embedding}{title}}\vspace{-4mm}}
 \author{Riley Evans (re17105)}
 \date{\vspace{-3mm}}
  
@@ -305,70 +285,639 @@ BoldItalicFont=merriweather-bold.ttf
 \makeatother
 \EndFmtInput
 %
+%
+%
+% First, let's redefine the forall, and the dot.
+%
+%
+% This is made in such a way that after a forall, the next
+% dot will be printed as a period, otherwise the formatting
+% of `comp_` is used. By redefining `comp_`, as suitable
+% composition operator can be chosen. Similarly, period_
+% is used for the period.
+%
+\ReadOnlyOnce{forall.fmt}%
+\makeatletter
+
+% The HaskellResetHook is a list to which things can
+% be added that reset the Haskell state to the beginning.
+% This is to recover from states where the hacked intelligence
+% is not sufficient.
+
+\let\HaskellResetHook\empty
+\newcommand*{\AtHaskellReset}[1]{%
+  \g@addto@macro\HaskellResetHook{#1}}
+\newcommand*{\HaskellReset}{\HaskellResetHook}
+
+\global\let\hsforallread\empty
+
+\newcommand\hsforall{\global\let\hsdot=\hsperiodonce}
+\newcommand*\hsperiodonce[2]{#2\global\let\hsdot=\hscompose}
+\newcommand*\hscompose[2]{#1}
+
+\AtHaskellReset{\global\let\hsdot=\hscompose}
+
+% In the beginning, we should reset Haskell once.
+\HaskellReset
+
+\makeatother
+\EndFmtInput
+%
+%
+\ReadOnlyOnce{lambda.fmt}%
+\makeatletter
+
+\newcommand\hslambda{\global\let\hsarrow=\hsarrowperiodonce}
+\newcommand*\hsarrowperiodonce[2]{#2\global\let\hsarrow=\hscompose}
+
+\AtHaskellReset{\global\let\hsarrow=\hscompose}
+
+% In the beginning, we should reset Haskell once.
+\HaskellReset
+
+\makeatother
+\EndFmtInput
 
 \begin{document}
-\secfont
 \maketitle
-\normalfont
+
+
+\section{Introduction}
+
+This is an overview of the techniques described in the paper \textit{\citefield{embedding}{title}}.
+The paper demonstrates a series of techniques that can be used when folding Domain Specific Languges.
+It does so through the use os a simple parallel prefic circuit language~\cite{scans}.
+
+
+In this overview a small parser combinator language will be used.
+This language brings one key feature that was not described in the paper: how to apply these techniques to a typed language.
+Only a minimal functionally complete set of combinators have been included in the language to keep it simple.
+However, all other combinators usually found in a combinator language can be contructed from this set.
+
+
+%% The paper takes an example Domain Specific Language and then demonstrates a series of techniques that are helpful for folding them.
 
 
 
-\section{DSLs}
-
-A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case. This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains. DSLs can be split into two different categories: standalone and embedded. Standalone DSLs require their own compiler and typically have their own syntax. Embedded DSLs use a GPL as a host language, therefore they use the syntax and compiler from that GPL. This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
-
-An embedded DSL can be implemented with two main techniques. Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST). This can then be used to apply optimisations and then evaluated. A second approach is to define the terms as their semantics, avoiding the AST. This approach is referred to as a shallow embedding.
 
 
-\section{Parsers}
-In the paper, a circuit language used to describe the different techniques for folding DSLs. For the purposes of this review a new DSL will be introduced - this is a parser DSL. This langauge is made up of 6 terms, they provide all the essential operations needed in a parser.
+%% What is the paper? What are its core ideas?
+
+%% How will the techniques be demoed? Pros/Cons of why they are useful for the parsing language.
+
+
+\section{Background}
+
+\subsection{DSLs}
+
+A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case.
+This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains.
+DSLs can be split into two different categories: standalone and embedded. Standalone DSLs require their own compiler and typically have their own syntax.
+Embedded DSLs use a GPL as a host language, therefore they use the syntax and compiler from that GPL.
+This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
+
+An embedded DSL can be implemented with two main techniques.
+Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST) as a host language datatype.
+This can then be used to apply optimisations and then evaluated.
+A second approach is to define the terms as first class components of the language, avoiding the creation of an AST - this is known as a shallow embedding.
+
+
+\subsection{Parsers}
+
+A parser is a used to convert a series of tokens into another language.
+For example converting a string into a Haskell datatype.
+Parser combinators provide a flexible approach to constructing parsers.
+Unlike parser generators, a combinator library is embedded within a host language: using combinators to construct the grammar.
+This makes it a suitable to demonstrate the techniques descriped in this paper for folding the DSL to create parsers.
+
+The langauge is made up of 6 terms, they provide all the essential operations needed in a parser.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{12}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{48}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{32}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{32E}{@{}l@{}}%
+\column{36}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{46}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{46E}{@{}l@{}}%
+\column{50}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\Varid{empty}{}\<[12]%
-\>[12]{}\mathbin{::}{}\<[48]%
-\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
+\>[12]{}\mathbin{::}\Conid{Parser}\;\Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{pure}{}\<[12]%
-\>[12]{}\mathbin{::}\Varid{a}\to {}\<[48]%
-\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
+\>[12]{}\mathbin{::}\Varid{a}{}\<[32]%
+\>[32]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[32E]%
+\>[36]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{satisfy}{}\<[12]%
-\>[12]{}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to {}\<[48]%
-\>[48]{}\Conid{Parser}\;\Conid{Char}{}\<[E]%
+\>[12]{}\mathbin{::}(\Conid{Char}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Bool}){}\<[32]%
+\>[32]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[32E]%
+\>[36]{}\Conid{Parser}\;\Conid{Char}{}\<[E]%
 \\
 \>[3]{}\Varid{try}{}\<[12]%
-\>[12]{}\mathbin{::}\Conid{Parser}\;\Varid{a}\to {}\<[48]%
-\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
+\>[12]{}\mathbin{::}\Conid{Parser}\;\Varid{a}{}\<[32]%
+\>[32]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[32E]%
+\>[36]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{ap}{}\<[12]%
-\>[12]{}\mathbin{::}\Conid{Parser}\;(\Varid{a}\to \Varid{b})\to {}\<[35]%
-\>[35]{}\Conid{Parser}\;\Varid{a}\to {}\<[48]%
-\>[48]{}\Conid{Parser}\;\Varid{b}{}\<[E]%
+\>[12]{}\mathbin{::}\Conid{Parser}\;(\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{b}){}\<[32]%
+\>[32]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[32E]%
+\>[36]{}\Conid{Parser}\;\Varid{a}{}\<[46]%
+\>[46]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[46E]%
+\>[50]{}\Conid{Parser}\;\Varid{b}{}\<[E]%
 \\
 \>[3]{}\Varid{or}{}\<[12]%
-\>[12]{}\mathbin{::}\Conid{Parser}\;\Varid{a}\to {}\<[35]%
-\>[35]{}\Conid{Parser}\;\Varid{a}\to {}\<[48]%
-\>[48]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
+\>[12]{}\mathbin{::}\Conid{Parser}\;\Varid{a}{}\<[32]%
+\>[32]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[32E]%
+\>[36]{}\Conid{Parser}\;\Varid{a}{}\<[46]%
+\>[46]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[46E]%
+\>[50]{}\Conid{Parser}\;\Varid{a}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-For example, a parser that can parse a or b can be defined as,
+
+
+For example, a parser that can parse the characters \ensuremath{\text{\ttfamily 'a'}} or \ensuremath{\text{\ttfamily 'b'}} can be defined as,
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\Varid{aorb}\mathbin{::}\Conid{Parser}\;\Conid{Char}{}\<[E]%
 \\
-\>[3]{}\Varid{aorb}\mathrel{=}(\Varid{satisfy}\;(\equiv \text{\ttfamily 'a'}))\mathbin{`\Varid{or}`}(\Varid{satisfy}\;(\equiv \text{\ttfamily 'b'})){}\<[E]%
+\>[3]{}\Varid{aorb}\mathrel{=}\Varid{satisfy}\;(\equiv \text{\ttfamily 'a'})\mathbin{`\Varid{or}`}\Varid{satisfy}\;(\equiv \text{\ttfamily 'b'}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
-A deep embedding of this parser language is defined as Parser2 in the appendix. A function size can be defined that finds the size of the AST created in the deep embedding
+A deep embedding of this parser language is defined in the alegebraic datatype:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{15E}{@{}l@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{37}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{37E}{@{}l@{}}%
+\column{41}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{52}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{52E}{@{}l@{}}%
+\column{56}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{data}\;\Conid{Parser}_{2}\;(\Varid{a}\mathbin{::}\mathbin{*})\;\mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Empty}_{2}{}\<[15]%
+\>[15]{}\mathbin{::}{}\<[15E]%
+\>[19]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Pure}_{2}{}\<[15]%
+\>[15]{}\mathbin{::}{}\<[15E]%
+\>[19]{}\Varid{a}{}\<[37]%
+\>[37]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[37E]%
+\>[41]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Satisfy}_{2}{}\<[15]%
+\>[15]{}\mathbin{::}{}\<[15E]%
+\>[19]{}(\Conid{Char}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Bool}){}\<[37]%
+\>[37]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[37E]%
+\>[41]{}\Conid{Parser}_{2}\;\Conid{Char}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Try}_{2}{}\<[15]%
+\>[15]{}\mathbin{::}{}\<[15E]%
+\>[19]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[37]%
+\>[37]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[37E]%
+\>[41]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Ap}_{2}{}\<[15]%
+\>[15]{}\mathbin{::}{}\<[15E]%
+\>[19]{}\Conid{Parser}_{2}\;(\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{b}){}\<[37]%
+\>[37]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[37E]%
+\>[41]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[52]%
+\>[52]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[52E]%
+\>[56]{}\Conid{Parser}_{2}\;\Varid{b}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Or}_{2}{}\<[15]%
+\>[15]{}\mathbin{::}{}\<[15E]%
+\>[19]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[37]%
+\>[37]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[37E]%
+\>[41]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[52]%
+\>[52]{}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[52E]%
+\>[56]{}\Conid{Parser}_{2}\;\Varid{a}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+This can be interpretted by defining a function such as \ensuremath{\Varid{size}}, that finds the size of the AST used to construct the parser - this can be found in the appendix.
+\ensuremath{\Varid{size}} interprets the deep embedding, by folding over the datatype.
+See the appendix for how to add an interpretation with a shallow embedding.
+
+
+\section{Folds}
+
+It is possible to capture the shape of an abstract datatype through the \ensuremath{\Conid{Functor}} type class.
+It is possible to capture the shape of an abstract datatype as a \ensuremath{\Conid{Functor}}.
+The use of a \ensuremath{\Conid{Functor}} allows for the specification of where a datatype recurses.
+There is however one problem, a functor expresing the parser language is required to be typed.
+Parsers require the type of the tokens being parsed.
+For example a parser reading tokens that make up an expression could have the type \ensuremath{\Conid{Parser}\;\Conid{Expr}}.
+A functor does not retain the type of the parser, therefore it is required to define a special type class called \ensuremath{\Conid{IFunctor}}, which is able to maintain the type indicies~\cite{mcbride2011functional}.
+A full definition can be found in the appendix.
+
+The shape of \ensuremath{\Conid{Parser}_{2}}, can be seen in \ensuremath{\Conid{ParserF}} where the \ensuremath{\Varid{k}\;\Varid{a}} marks the recursive spots.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{33}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{42}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{data}\;\Conid{ParserF}\;(\Varid{k}\mathbin{::}\mathbin{*}\hsarrow{\rightarrow }{\mathpunct{.}}\mathbin{*})\;(\Varid{a}\mathbin{::}\mathbin{*})\;\mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{EmptyF}{}\<[14]%
+\>[14]{}\mathbin{::}\Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{PureF}{}\<[14]%
+\>[14]{}\mathbin{::}\Varid{a}{}\<[33]%
+\>[33]{}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{SatisfyF}\mathbin{::}(\Conid{Char}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Bool}){}\<[33]%
+\>[33]{}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{ParserF}\;\Varid{k}\;\Conid{Char}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{TryF}{}\<[14]%
+\>[14]{}\mathbin{::}\Varid{k}\;\Varid{a}{}\<[33]%
+\>[33]{}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{ApF}{}\<[14]%
+\>[14]{}\mathbin{::}\Varid{k}\;(\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{b}){}\<[33]%
+\>[33]{}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{k}\;\Varid{a}{}\<[42]%
+\>[42]{}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{ParserF}\;\Varid{k}\;\Varid{b}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{OrF}{}\<[14]%
+\>[14]{}\mathbin{::}\Varid{k}\;\Varid{a}{}\<[33]%
+\>[33]{}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{k}\;\Varid{a}{}\<[42]%
+\>[42]{}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{34}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{38}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{42}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{instance}\;\Conid{IFunctor}\;\Conid{ParserF}\;\mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\;\anonymous \;\Conid{EmptyF}{}\<[26]%
+\>[26]{}\mathrel{=}\Conid{EmptyF}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\;\anonymous \;(\Conid{PureF}\;\Varid{x}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{PureF}\;{}\<[38]%
+\>[38]{}\Varid{x}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\;\anonymous \;(\Conid{SatisfyF}\;\Varid{c}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{SatisfyF}\;{}\<[38]%
+\>[38]{}\Varid{c}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\;\Varid{f}\;(\Conid{TryF}\;\Varid{px}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{TryF}\;{}\<[34]%
+\>[34]{}(\Varid{f}\;\Varid{px}){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\;\Varid{f}\;(\Conid{ApF}\;\Varid{pf}\;\Varid{px}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{ApF}\;{}\<[34]%
+\>[34]{}(\Varid{f}\;\Varid{pf})\;{}\<[42]%
+\>[42]{}(\Varid{f}\;\Varid{px}){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\;\Varid{f}\;(\Conid{OrF}\;\Varid{px}\;\Varid{py}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{OrF}\;{}\<[34]%
+\>[34]{}(\Varid{f}\;\Varid{px})\;{}\<[42]%
+\>[42]{}(\Varid{f}\;\Varid{py}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\ensuremath{\Conid{Fix}} is used to get the fixed point of the functor.
+It contains the structure needed to make the datatype recursive.
+\ensuremath{\Conid{Parser}_{4}} is the fixed point of \ensuremath{\Conid{ParserF}}.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{type}\;\Conid{Parser}_{4}\;\Varid{a}\mathrel{=}\Conid{Fix}\;\Conid{ParserF}\;\Varid{a}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+A mechanism is now required for folding this abstract datatype.
+This is possible through the use of a catamorphism, which is a generalised way of folding an abstract datatype.
+Therefore, the \ensuremath{\Varid{cata}} function can be used - a definition can be found in the appendix.
+
+
+Now all the building blocks have been defined that allow for the folding of the parser DSL.
+\ensuremath{\Varid{size}} can be defined as a fold, which is determined by the \ensuremath{\Varid{sizeAlg}}.
+Due to parsers being a typed language, a constant functor is required to preserve the type indicies.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{newtype}\;\Conid{C}\;\Varid{a}\;\Varid{i}\mathrel{=}\Conid{C}\;\{\mskip1.5mu \Varid{unConst}\mathbin{::}\Varid{a}\mskip1.5mu\}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{sizeAlg}\mathbin{::}\Conid{ParserF}\;(\Conid{C}\;\Conid{Size})\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{C}\;\Conid{Size}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{sizeAlg}\;\Conid{EmptyF}{}\<[26]%
+\>[26]{}\mathrel{=}\Conid{C}\;\mathrm{1}{}\<[E]%
+\\
+\>[3]{}\Varid{sizeAlg}\;(\Conid{PureF}\;{}\<[22]%
+\>[22]{}\anonymous ){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{C}\;\mathrm{1}{}\<[E]%
+\\
+\>[3]{}\Varid{sizeAlg}\;(\Conid{SatisfyF}\;{}\<[22]%
+\>[22]{}\anonymous ){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{C}\;\mathrm{1}{}\<[E]%
+\\
+\>[3]{}\Varid{sizeAlg}\;(\Conid{TryF}\;(\Conid{C}\;\Varid{n})){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{C}\mathbin{\$}\Varid{n}\mathbin{+}\mathrm{1}{}\<[E]%
+\\
+\>[3]{}\Varid{sizeAlg}\;(\Conid{ApF}\;(\Conid{C}\;\Varid{pf})\;(\Conid{C}\;\Varid{px}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{pf}\mathbin{+}\Varid{px}\mathbin{+}\mathrm{1}{}\<[E]%
+\\
+\>[3]{}\Varid{sizeAlg}\;(\Conid{OrF}\;(\Conid{C}\;\Varid{px})\;(\Conid{C}\;\Varid{py}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{px}\mathbin{+}\Varid{py}\mathbin{+}\mathrm{1}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{size}_{4}\mathbin{::}\Conid{Parser}_{4}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Size}{}\<[E]%
+\\
+\>[3]{}\Varid{size}_{4}\mathrel{=}\Varid{unConst}\hsdot{\circ }{.}\Varid{cata}\;\Varid{sizeAlg}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Multiple Interpretations}
+
+In DSLs it is common to want to evaluate multiple interpretations.
+For example, a parser may also want to know the maximum characters it will read (maximum munch).
+In a deep embedding this is simple, a second algebra can be defined.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{29}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{type}\;\Conid{MM}\mathrel{=}\Conid{Int}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{mmAlg}\mathbin{::}\Conid{ParserF}\;(\Conid{C}\;\Conid{MM})\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{C}\;\Conid{MM}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{mmAlg}\;(\Conid{PureF}\;\anonymous ){}\<[29]%
+\>[29]{}\mathrel{=}\Conid{C}\;\mathrm{0}{}\<[E]%
+\\
+\>[3]{}\Varid{mmAlg}\;{}\<[10]%
+\>[10]{}\Conid{EmptyF}{}\<[29]%
+\>[29]{}\mathrel{=}\Conid{C}\;\mathrm{0}{}\<[E]%
+\\
+\>[3]{}\Varid{mmAlg}\;(\Conid{SatisfyF}\;\Varid{c}){}\<[29]%
+\>[29]{}\mathrel{=}\Conid{C}\;\mathrm{1}{}\<[E]%
+\\
+\>[3]{}\Varid{mmAlg}\;(\Conid{TryF}\;(\Conid{C}\;\Varid{px})){}\<[29]%
+\>[29]{}\mathrel{=}\Conid{C}\;\Varid{px}{}\<[E]%
+\\
+\>[3]{}\Varid{mmAlg}\;(\Conid{ApF}\;(\Conid{C}\;\Varid{pf})\;(\Conid{C}\;\Varid{px}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{pf}\mathbin{+}\Varid{px}{}\<[E]%
+\\
+\>[3]{}\Varid{mmAlg}\;(\Conid{OrF}\;(\Conid{C}\;\Varid{px})\;(\Conid{C}\;\Varid{py}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{max}\;\Varid{px}\;\Varid{py}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{maxMunch}_{4}\mathbin{::}\Conid{Parser}_{4}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{MM}{}\<[E]%
+\\
+\>[3]{}\Varid{maxMunch}_{4}\mathrel{=}\Varid{unConst}\hsdot{\circ }{.}\Varid{cata}\;\Varid{mmAlg}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+However, in a shallow embedding it is not as easy.
+To be able to evaluate both semantics a pair can be used, with both interpretations being evaluated simultaneously.
+If many semantics are required this can become cumbersome to define.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{42}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{43}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{type}\;\Conid{Parser}_{5}\mathrel{=}(\Conid{Size},\Conid{MM}){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{size}_{5}\mathbin{::}\Conid{Parser}_{5}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Size}{}\<[E]%
+\\
+\>[3]{}\Varid{size}_{5}\mathrel{=}\Varid{fst}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{maxMunch}_{5}\mathbin{::}\Conid{Parser}_{5}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Size}{}\<[E]%
+\\
+\>[3]{}\Varid{maxMunch}_{5}\mathrel{=}\Varid{snd}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{smmAlg}\mathbin{::}\Conid{ParserF}\;(\Conid{C}\;(\Conid{Size},\Conid{MM}))\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[42]%
+\>[42]{}\Conid{C}\;(\Conid{Size},\Conid{MM})\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{smmAlg}\;(\Conid{PureF}\;\anonymous ){}\<[30]%
+\>[30]{}\mathrel{=}\Conid{C}\;(\mathrm{1},{}\<[43]%
+\>[43]{}\mathrm{0}){}\<[E]%
+\\
+\>[3]{}\Varid{smmAlg}\;\Conid{EmptyF}{}\<[30]%
+\>[30]{}\mathrel{=}\Conid{C}\;(\mathrm{1},{}\<[43]%
+\>[43]{}\mathrm{0}){}\<[E]%
+\\
+\>[3]{}\Varid{smmAlg}\;(\Conid{SatisfyF}\;\Varid{c}){}\<[30]%
+\>[30]{}\mathrel{=}\Conid{C}\;(\mathrm{1},{}\<[43]%
+\>[43]{}\mathrm{1}){}\<[E]%
+\\
+\>[3]{}\Varid{smmAlg}\;(\Conid{TryF}\;(\Conid{C}\;(\Varid{s},\Varid{mm}))){}\<[30]%
+\>[30]{}\mathrel{=}\Conid{C}\;(\Varid{s}\mathbin{+}\mathrm{1},{}\<[43]%
+\>[43]{}\Varid{mm}){}\<[E]%
+\\
+\>[3]{}\Varid{smmAlg}\;(\Conid{ApF}\;{}\<[16]%
+\>[16]{}(\Conid{C}\;(\Varid{s},\Varid{mm}))\;(\Conid{C}\;(\Varid{s'},\Varid{mm'}))){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathrel{=}\Conid{C}\;(\Varid{s}\mathbin{+}\Varid{s'}\mathbin{+}\mathrm{1},\Varid{mm}\mathbin{+}\Varid{mm'}){}\<[E]%
+\\
+\>[3]{}\Varid{smmAlg}\;(\Conid{OrF}\;{}\<[16]%
+\>[16]{}(\Conid{C}\;(\Varid{s},\Varid{mm}))\;(\Conid{C}\;(\Varid{s'},\Varid{mm'}))){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathrel{=}\Conid{C}\;(\Varid{s}\mathbin{+}\Varid{s'}\mathbin{+}\mathrm{1},\Varid{max}\;\Varid{mm}\;\Varid{mm'}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Although this is an algebra, you are able to learn the shallow embedding from this, for example:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{ap}_{5}\;\Varid{pf}\;\Varid{px}\mathrel{=}\Varid{smmAlg}\;(\Conid{ApF}\;\Varid{pf}\;\Varid{px}){}\<[E]%
+\\
+\>[3]{}\Varid{or}_{5}\;\Varid{px}\;\Varid{py}\mathrel{=}\Varid{smmAlg}\;(\Conid{OrF}\;\Varid{px}\;\Varid{py}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Dependent Interpretations}
+
+zygomorphisms
+
+TODO: something in parsley. \cite{parsley}
+
+% https://github.com/J-mie6/ParsleyHaskell/blob/abe5df58cca05d8825036790f9c138183fe852b1/Parsley/Frontend/CombinatorAnalyser.hs#L70
+
+
+\subsection{Context-sensitive Interpretations}
+
+
+Parsers themselves inherently require context sensitive interpretations - what you can parse will
+decide what you are able to parse in latter points of the parser.
+
+Using the semantics from~\cite{wuYoda} we are able to implement a simple parser using an accumulating fold.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{newtype}\;\Conid{Y}\;\Varid{a}\mathrel{=}\Conid{Y}\;\{\mskip1.5mu \Varid{unYoda}\mathbin{::}\Conid{String}\hsarrow{\rightarrow }{\mathpunct{.}}[\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]\mskip1.5mu\}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{19E}{@{}l@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{yAlg}\mathbin{::}\Conid{ParserF}\;\Conid{Y}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Y}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\;(\Conid{PureF}\;\Varid{x}){}\<[22]%
+\>[22]{}\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \hslambda \Varid{ts}\hsarrow{\rightarrow }{\mathpunct{.}}[\mskip1.5mu (\Varid{x},\Varid{ts})\mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\;{}\<[9]%
+\>[9]{}\Conid{EmptyF}{}\<[22]%
+\>[22]{}\mathrel{=}\Conid{Y}\mathbin{\$}\Varid{const}\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\;(\Conid{SatisfyF}\;\Varid{c}){}\<[22]%
+\>[22]{}\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \hslambda \mathbf{case}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}[\mskip1.5mu \mskip1.5mu]{}\<[14]%
+\>[14]{}\hsarrow{\rightarrow }{\mathpunct{.}}[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}(\Varid{t}\mathbin{:}\Varid{ts'}){}\<[14]%
+\>[14]{}\hsarrow{\rightarrow }{\mathpunct{.}}[\mskip1.5mu (\Varid{t},\Varid{ts'})\mid \Varid{c}\;\Varid{t}\mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\;(\Conid{TryF}\;\Varid{px}){}\<[22]%
+\>[22]{}\mathrel{=}\Varid{px}{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\;(\Conid{ApF}\;(\Conid{Y}\;\Varid{pf})\;(\Conid{Y}\;\Varid{px}))\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \hslambda \Varid{ts}\hsarrow{\rightarrow }{\mathpunct{.}}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}[\mskip1.5mu (\Varid{f}\;\Varid{x},\Varid{ts''}){}\<[19]%
+\>[19]{}\mid {}\<[19E]%
+\>[23]{}(\Varid{f},{}\<[28]%
+\>[28]{}\Varid{ts'}){}\<[35]%
+\>[35]{}\leftarrow \Varid{pf}\;\Varid{ts}{}\<[E]%
+\\
+\>[19]{},{}\<[19E]%
+\>[23]{}(\Varid{x},{}\<[28]%
+\>[28]{}\Varid{ts''}){}\<[35]%
+\>[35]{}\leftarrow \Varid{px}\;\Varid{ts'}\mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\;(\Conid{OrF}\;(\Conid{Y}\;\Varid{px})\;(\Conid{Y}\;\Varid{py}))\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \hslambda \Varid{ts}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{px}\;\Varid{ts}\plus \Varid{py}\;\Varid{ts}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{parse}\mathbin{::}\Conid{Parser}_{4}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}(\Conid{String}\hsarrow{\rightarrow }{\mathpunct{.}}[\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\Varid{parse}\mathrel{=}\Varid{unYoda}\hsdot{\circ }{.}\Varid{cata}\;\Varid{yAlg}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Parameterized Interpretations}
+
+Previously we saw how to add multiple types of interpretations to a shallow embedding. We used pairs to allow us to have two interpretations.
+However, this doesn't extend very well to many more interpretations. Language support starts to fade for larger tuples and it will begin to become messy.
+
+We already know that shallow embeddings are folds, so we could create a shallow embedding that is in terms of a single parameterized interterpretation.
+
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{newtype}\;\Conid{Parser}_{7}\;\Varid{i}\mathrel{=}\Conid{P7}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\{\mskip1.5mu \Varid{unP7}\mathbin{::}\forall \Varid{a}\hsforall \hsdot{\circ }{.}(\forall \Varid{j}\hsforall \hsdot{\circ }{.}\Conid{ParserF}\;\Varid{a}\;\Varid{j}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{a}\;\Varid{j})\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{a}\;\Varid{i}\mskip1.5mu\}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{pure}_{7}\mathbin{::}\Varid{i}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Parser}_{7}\;\Varid{i}{}\<[E]%
+\\
+\>[3]{}\Varid{pure}_{7}\;\Varid{x}\mathrel{=}\Conid{P7}\;(\lambda \hslambda \Varid{h}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{h}\;(\Conid{PureF}\;\Varid{x})){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{empty}_{7}\mathbin{::}\Conid{Parser}_{7}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{empty}_{7}\mathrel{=}\Conid{P7}\;(\lambda \hslambda \Varid{h}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{h}\;\Conid{EmptyF}){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{satisfy}_{7}\mathbin{::}(\Conid{Char}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Bool})\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Parser}_{7}\;\Conid{Char}{}\<[E]%
+\\
+\>[3]{}\Varid{satisfy}_{7}\;\Varid{c}\mathrel{=}\Conid{P7}\;(\lambda \hslambda \Varid{h}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{h}\;(\Conid{SatisfyF}\;\Varid{c})){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{try}_{7}\mathbin{::}\Conid{Parser}_{7}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Parser}_{7}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{try}_{7}\;\Varid{px}\mathrel{=}\Conid{P7}\;(\lambda \hslambda \Varid{h}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{h}\;(\Conid{TryF}\;(\Varid{unP7}\;\Varid{px}\;\Varid{h}))){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{ap}_{7}\mathbin{::}\Conid{Parser}_{7}\;(\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{b})\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Parser}_{7}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Parser}_{7}\;\Varid{b}{}\<[E]%
+\\
+\>[3]{}\Varid{ap}_{7}\;\Varid{pf}\;\Varid{px}\mathrel{=}\Conid{P7}\;(\lambda \hslambda \Varid{h}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{h}\;(\Conid{ApF}\;(\Varid{unP7}\;\Varid{pf}\;\Varid{h})\;(\Varid{unP7}\;\Varid{px}\;\Varid{h}))){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{or}_{7}\mathbin{::}\Conid{Parser}_{7}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Parser}_{7}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Parser}_{7}\;\Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{or}_{7}\;\Varid{px}\;\Varid{py}\mathrel{=}\Conid{P7}\;(\lambda \hslambda \Varid{h}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{h}\;(\Conid{OrF}\;(\Varid{unP7}\;\Varid{px}\;\Varid{h})\;(\Varid{unP7}\;\Varid{py}\;\Varid{h}))){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Implicitly Parameterized Interpretations}
+
+TODO
+
+\subsection{Modular Interpretations}
+
+TODO
+
+
+
+
+
+\printbibliography
+
+
+\section{Appendix}
+
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -381,54 +930,44 @@ A deep embedding of this parser language is defined as Parser2 in the appendix. 
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\mathbf{type}\;\Conid{Size}\mathrel{=}\Conid{Int}{}\<[E]%
 \\
-\>[3]{}\Varid{size}\mathbin{::}\Conid{Parser2}\;\Varid{a}\to \Conid{Size}{}\<[E]%
+\>[3]{}\Varid{size}\mathbin{::}\Conid{Parser}_{2}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Size}{}\<[E]%
 \\
 \>[3]{}\Varid{size}\;{}\<[9]%
-\>[9]{}(\Conid{Empty2}){}\<[23]%
+\>[9]{}\Conid{Empty}_{2}{}\<[23]%
 \>[23]{}\mathrel{=}{}\<[23E]%
 \>[26]{}\mathrm{1}{}\<[E]%
 \\
 \>[3]{}\Varid{size}\;{}\<[9]%
-\>[9]{}(\Conid{Pure2}\;\anonymous ){}\<[23]%
+\>[9]{}(\Conid{Pure}_{2}\;\anonymous ){}\<[23]%
 \>[23]{}\mathrel{=}{}\<[23E]%
 \>[26]{}\mathrm{1}{}\<[E]%
 \\
 \>[3]{}\Varid{size}\;{}\<[9]%
-\>[9]{}(\Conid{Satisfy2}\;\anonymous ){}\<[23]%
+\>[9]{}(\Conid{Satisfy}_{2}\;\anonymous ){}\<[23]%
 \>[23]{}\mathrel{=}{}\<[23E]%
 \>[26]{}\mathrm{1}{}\<[E]%
 \\
 \>[3]{}\Varid{size}\;{}\<[9]%
-\>[9]{}(\Conid{Try2}\;\Varid{px}){}\<[23]%
+\>[9]{}(\Conid{Try}_{2}\;\Varid{px}){}\<[23]%
 \>[23]{}\mathrel{=}{}\<[23E]%
 \>[26]{}\mathrm{1}\mathbin{+}{}\<[31]%
 \>[31]{}\Varid{size}\;\Varid{px}{}\<[E]%
 \\
 \>[3]{}\Varid{size}\;{}\<[9]%
-\>[9]{}(\Conid{Ap2}\;\Varid{pf}\;\Varid{px}){}\<[23]%
+\>[9]{}(\Conid{Ap}_{2}\;\Varid{pf}\;\Varid{px}){}\<[23]%
 \>[23]{}\mathrel{=}{}\<[23E]%
 \>[26]{}\mathrm{1}\mathbin{+}{}\<[31]%
 \>[31]{}\Varid{size}\;\Varid{pf}{}\<[40]%
 \>[40]{}\mathbin{+}\Varid{size}\;\Varid{px}{}\<[E]%
 \\
 \>[3]{}\Varid{size}\;{}\<[9]%
-\>[9]{}(\Conid{Or2}\;\Varid{px}\;\Varid{py}){}\<[23]%
+\>[9]{}(\Conid{Or}_{2}\;\Varid{px}\;\Varid{py}){}\<[23]%
 \>[23]{}\mathrel{=}{}\<[23E]%
 \>[26]{}\mathrm{1}\mathbin{+}{}\<[31]%
 \>[31]{}\Varid{size}\;\Varid{px}{}\<[40]%
 \>[40]{}\mathbin{+}\Varid{size}\;\Varid{py}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-We can specify a datatype to represent this parser as a deeply embedded DSL.
-
-
-It is simple to define functions to manipulate this deep embedding.
-For example, one could be used to find the size of the parser.
-
-
-
-It is clear that size is a fold over Parser2, hence it is a suitable semantics for a shallow embedding.
-
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -447,19 +986,11 @@ It is clear that size is a fold over Parser2, hence it is a suitable semantics f
 \\
 \>[3]{}\Varid{or3}\;\Varid{px}\;\Varid{py}\mathrel{=}\Varid{px}\mathbin{+}\Varid{py}\mathbin{+}\mathrm{1}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\Varid{size3}\mathbin{::}\Conid{Parser3}\;\Varid{a}\to \Conid{Size}{}\<[E]%
+\>[3]{}\Varid{size3}\mathbin{::}\Conid{Parser3}\;\Varid{a}\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Size}{}\<[E]%
 \\
 \>[3]{}\Varid{size3}\mathrel{=}\Varid{id}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-
-\section{Folds}
-
-Blah blah
-
-The shape is able to be captured in an instance of the Functor type class.
-In a difference to the paper Parsers are a typed DSL. Therefore, we need to define an instance of the IFunctor type class,
-in order to retain these types. TODO: Type indices
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -468,407 +999,13 @@ in order to retain these types. TODO: Type indices
 \>[3]{}\mathbf{class}\;\Conid{IFunctor}\;\Varid{f}\;\mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\mathbin{::}(\Varid{forall}\;\Varid{i}\mathbin{\circ}\Varid{a}\;\Varid{i}\to \Varid{b}\;\Varid{i})\to \Varid{f}\;\Varid{a}\;\Varid{i}\to \Varid{f}\;\Varid{b}\;\Varid{i}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{data}\;\Conid{ParserF}\;(\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\;(\Varid{a}\mathbin{::}\mathbin{*})\;\mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{PureF}{}\<[14]%
-\>[14]{}\mathbin{::}\Varid{a}\to \Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{SatisfyF}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{ParserF}\;\Varid{k}\;\Conid{Char}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{EmptyF}{}\<[14]%
-\>[14]{}\mathbin{::}\Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{TryF}{}\<[14]%
-\>[14]{}\mathbin{::}\Varid{k}\;\Varid{a}\to \Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{ApF}\mathbin{::}\Varid{k}\;(\Varid{a}\to \Varid{b})\to \Varid{k}\;\Varid{a}\to \Conid{ParserF}\;\Varid{k}\;\Varid{b}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{OrF}\mathbin{::}\Varid{k}\;\Varid{a}\to \Varid{k}\;\Varid{a}\to \Conid{ParserF}\;\Varid{k}\;\Varid{a}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{instance}\;\Conid{IFunctor}\;\Conid{ParserF}\;\mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\;\anonymous \;\Conid{EmptyF}\mathrel{=}\Conid{EmptyF}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\;\anonymous \;(\Conid{SatisfyF}\;\Varid{c})\mathrel{=}\Conid{SatisfyF}\;\Varid{c}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\;\anonymous \;(\Conid{PureF}\;\Varid{x})\mathrel{=}\Conid{PureF}\;\Varid{x}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\;\Varid{f}\;(\Conid{TryF}\;\Varid{px})\mathrel{=}\Conid{TryF}\;(\Varid{f}\;\Varid{px}){}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\;\Varid{f}\;(\Conid{ApF}\;\Varid{pf}\;\Varid{px})\mathrel{=}\Conid{ApF}\;(\Varid{f}\;\Varid{pf})\;(\Varid{f}\;\Varid{px}){}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\;\Varid{f}\;(\Conid{OrF}\;\Varid{px}\;\Varid{py})\mathrel{=}\Conid{OrF}\;(\Varid{f}\;\Varid{px})\;(\Varid{f}\;\Varid{py}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-The paper here attempts to hide its usage of Fix and cata by specifying specialised versions of them for Circuit4.
-Instead, we can just use Fix and cata for clarity.
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[5]{}\Varid{imap}\mathbin{::}(\forall \Varid{i}\hsforall \hsdot{\circ }{.}\Varid{a}\;\Varid{i}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{b}\;\Varid{i})\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{f}\;\Varid{a}\;\Varid{i}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{f}\;\Varid{b}\;\Varid{i}{}\<[E]%
+\\[\blanklineskip]%
 \>[3]{}\mathbf{newtype}\;\Conid{Fix}\;\Varid{f}\;\Varid{a}\mathrel{=}\Conid{In}\;(\Varid{f}\;(\Conid{Fix}\;\Varid{f})\;\Varid{a}){}\<[E]%
 \\
-\>[3]{}\mathbf{type}\;\Conid{Parser4}\;\Varid{a}\mathrel{=}\Conid{Fix}\;\Conid{ParserF}\;\Varid{a}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{cata}\mathbin{::}\Conid{IFunctor}\;\Varid{f}\Rightarrow (\Varid{forall}\;\Varid{i}\mathbin{\circ}\Varid{f}\;\Varid{a}\;\Varid{i}\to \Varid{a}\;\Varid{i})\to \Conid{Fix}\;\Varid{f}\;\Varid{i}\to \Varid{a}\;\Varid{i}{}\<[E]%
+\>[3]{}\Varid{cata}\mathbin{::}\Conid{IFunctor}\;\Varid{f}\Rightarrow (\forall \Varid{i}\hsforall \hsdot{\circ }{.}\Varid{f}\;\Varid{a}\;\Varid{i}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{a}\;\Varid{i})\hsarrow{\rightarrow }{\mathpunct{.}}\Conid{Fix}\;\Varid{f}\;\Varid{i}\hsarrow{\rightarrow }{\mathpunct{.}}\Varid{a}\;\Varid{i}{}\<[E]%
 \\
 \>[3]{}\Varid{cata}\;\Varid{alg}\;(\Conid{In}\;\Varid{x})\mathrel{=}\Varid{alg}\;(\Varid{imap}\;(\Varid{cata}\;\Varid{alg})\;\Varid{x}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-
-Now we have all the building blocks needed to start folding our parser DSL.
-Size can be defined as a fold, which can be determined by the sizeAlg
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{newtype}\;\Conid{Const}\;\Varid{a}\;\Varid{i}\mathrel{=}\Conid{Const}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{unConst}\mathbin{::}\Conid{Const}\;\Varid{a}\;\Varid{i}\to \Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{unConst}\;(\Conid{Const}\;\Varid{x})\mathrel{=}\Varid{x}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{sizeAlg}\mathbin{::}\Conid{ParserF}\;(\Conid{Const}\;\Conid{Size})\;\Varid{a}\to \Conid{Const}\;\Conid{Size}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{sizeAlg}\;(\Conid{PureF}\;\anonymous )\mathrel{=}\Conid{Const}\;\mathrm{1}{}\<[E]%
-\\
-\>[3]{}\Varid{sizeAlg}\;(\Conid{SatisfyF}\;\anonymous )\mathrel{=}\Conid{Const}\;\mathrm{1}{}\<[E]%
-\\
-\>[3]{}\Varid{sizeAlg}\;\Conid{EmptyF}\mathrel{=}\Conid{Const}\;\mathrm{1}{}\<[E]%
-\\
-\>[3]{}\Varid{sizeAlg}\;(\Conid{TryF}\;(\Conid{Const}\;\Varid{n}))\mathrel{=}\Conid{Const}\;(\Varid{n}\mathbin{+}\mathrm{1}){}\<[E]%
-\\
-\>[3]{}\Varid{sizeAlg}\;(\Conid{ApF}\;(\Conid{Const}\;\Varid{pf})\;(\Conid{Const}\;\Varid{px}))\mathrel{=}\Conid{Const}\;(\Varid{pf}\mathbin{+}\Varid{px}\mathbin{+}\mathrm{1}){}\<[E]%
-\\
-\>[3]{}\Varid{sizeAlg}\;(\Conid{OrF}\;(\Conid{Const}\;\Varid{px})\;(\Conid{Const}\;\Varid{py}))\mathrel{=}\Conid{Const}\;(\Varid{px}\mathbin{+}\Varid{py}\mathbin{+}\mathrm{1}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{size4}\mathbin{::}\Conid{Parser4}\;\Varid{a}\to \Conid{Size}{}\<[E]%
-\\
-\>[3]{}\Varid{size4}\mathrel{=}\Varid{unConst}\mathbin{\circ}\Varid{cata}\;\Varid{sizeAlg}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-\section{Multi}
-
-
-A common thing with DSLs is to evaluate multiple interpretations.
-For example, a parser may also want to know the maximum characters it will read.
-In a deep embedding this is simple, we just provide a second algebra.
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{43}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{type}\;\Conid{MaxMunch}\mathrel{=}\Conid{Int}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{maxMunchAlg}\mathbin{::}\Conid{ParserF}\;(\Conid{Const}\;\Conid{MaxMunch})\;\Varid{a}\to \Conid{Const}\;\Conid{MaxMunch}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{maxMunchAlg}\;(\Conid{PureF}\;\anonymous ){}\<[43]%
-\>[43]{}\mathrel{=}\Conid{Const}\;\mathrm{0}{}\<[E]%
-\\
-\>[3]{}\Varid{maxMunchAlg}\;{}\<[16]%
-\>[16]{}\Conid{EmptyF}{}\<[43]%
-\>[43]{}\mathrel{=}\Conid{Const}\;\mathrm{0}{}\<[E]%
-\\
-\>[3]{}\Varid{maxMunchAlg}\;(\Conid{SatisfyF}\;\Varid{c}){}\<[43]%
-\>[43]{}\mathrel{=}\Conid{Const}\;\mathrm{1}{}\<[E]%
-\\
-\>[3]{}\Varid{maxMunchAlg}\;(\Conid{TryF}\;(\Conid{Const}\;\Varid{px})){}\<[43]%
-\>[43]{}\mathrel{=}\Conid{Const}\;\Varid{px}{}\<[E]%
-\\
-\>[3]{}\Varid{maxMunchAlg}\;(\Conid{ApF}\;(\Conid{Const}\;\Varid{pf})\;(\Conid{Const}\;\Varid{px}))\mathrel{=}\Conid{Const}\;(\Varid{pf}\mathbin{+}\Varid{px}){}\<[E]%
-\\
-\>[3]{}\Varid{maxMunchAlg}\;(\Conid{OrF}\;(\Conid{Const}\;\Varid{px})\;(\Conid{Const}\;\Varid{py}))\mathrel{=}\Conid{Const}\;(\Varid{max}\;\Varid{px}\;\Varid{py}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{maxMunch4}\mathbin{::}\Conid{Parser4}\;\Varid{a}\to \Conid{MaxMunch}{}\<[E]%
-\\
-\>[3]{}\Varid{maxMunch4}\mathrel{=}\Varid{unConst}\mathbin{\circ}\Varid{cata}\;\Varid{maxMunchAlg}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-But what about a shallow embedding? So far we have only seen parsers be able to have single semantics,
-so how could we calculate both the maxMunch and size of a parser? It turns out the solution is simple,
-we can use a pair and calculate both interpretations simulataneously.
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{type}\;\Conid{Parser5}\mathrel{=}(\Conid{Size},\Conid{MaxMunch}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{size5}\mathbin{::}\Conid{Parser5}\to \Conid{Size}{}\<[E]%
-\\
-\>[3]{}\Varid{size5}\mathrel{=}\Varid{fst}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{maxMunch5}\mathbin{::}\Conid{Parser5}\to \Conid{Size}{}\<[E]%
-\\
-\>[3]{}\Varid{maxMunch5}\mathrel{=}\Varid{snd}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{60}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{81}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{sizeMaxMunchAlg}\mathbin{::}\Conid{ParserF}\;(\Conid{Const}\;(\Conid{Size},\Conid{MaxMunch}))\;\Varid{a}\to \Conid{Const}\;(\Conid{Size},\Conid{MaxMunch})\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{sizeMaxMunchAlg}\;(\Conid{PureF}\;\anonymous ){}\<[60]%
-\>[60]{}\mathrel{=}\Conid{Const}\;(\mathrm{1},{}\<[81]%
-\>[81]{}\mathrm{0}){}\<[E]%
-\\
-\>[3]{}\Varid{sizeMaxMunchAlg}\;{}\<[20]%
-\>[20]{}\Conid{EmptyF}{}\<[60]%
-\>[60]{}\mathrel{=}\Conid{Const}\;(\mathrm{1},{}\<[81]%
-\>[81]{}\mathrm{0}){}\<[E]%
-\\
-\>[3]{}\Varid{sizeMaxMunchAlg}\;(\Conid{SatisfyF}\;\Varid{c}){}\<[60]%
-\>[60]{}\mathrel{=}\Conid{Const}\;(\mathrm{1},{}\<[81]%
-\>[81]{}\mathrm{1}){}\<[E]%
-\\
-\>[3]{}\Varid{sizeMaxMunchAlg}\;(\Conid{TryF}\;(\Conid{Const}\;(\Varid{s},\Varid{mm}))){}\<[60]%
-\>[60]{}\mathrel{=}\Conid{Const}\;(\Varid{s}\mathbin{+}\mathrm{1},{}\<[81]%
-\>[81]{}\Varid{mm}){}\<[E]%
-\\
-\>[3]{}\Varid{sizeMaxMunchAlg}\;(\Conid{ApF}\;{}\<[25]%
-\>[25]{}(\Conid{Const}\;(\Varid{s},\Varid{mm}))\;(\Conid{Const}\;(\Varid{s'},\Varid{mm'})))\mathrel{=}\Conid{Const}\;(\Varid{s}\mathbin{+}\Varid{s'}\mathbin{+}\mathrm{1},\Varid{mm}\mathbin{+}\Varid{mm'}){}\<[E]%
-\\
-\>[3]{}\Varid{sizeMaxMunchAlg}\;(\Conid{OrF}\;{}\<[25]%
-\>[25]{}(\Conid{Const}\;(\Varid{s},\Varid{mm}))\;(\Conid{Const}\;(\Varid{s'},\Varid{mm'})))\mathrel{=}\Conid{Const}\;(\Varid{s}\mathbin{+}\Varid{s'}\mathbin{+}\mathrm{1},\Varid{max}\;\Varid{mm}\;\Varid{mm'}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-Although this is an algebra, you are able to glean the shallow embedding from this, for example:
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{ap5}\;\Varid{pf}\;\Varid{px}\mathrel{=}\Varid{sizeMaxMunchAlg}\;(\Conid{ApF}\;\Varid{pf}\;\Varid{px}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-\section{dependent}
-
-zygomorphisms
-
-TODO: something in parsley. \cite{10.1145/3409002}
-
-% https://github.com/J-mie6/ParsleyHaskell/blob/abe5df58cca05d8825036790f9c138183fe852b1/Parsley/Frontend/CombinatorAnalyser.hs#L70
-
-
-\section{Context Sensitive}
-
-
-Parsers themselves inherently require context sensitive interpretations - what you can parse will
-decide what you are able to parse in latter points of the parser.
-
-Using the semantics from https://github.com/zenzike/yoda we are able to implement a simple parser using an accumulating fold.
-
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{newtype}\;\Conid{Yoda}\;\Varid{a}\mathrel{=}\Conid{Yoda}\;\{\mskip1.5mu \Varid{unYoda}\mathbin{::}\Conid{String}\to [\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]\mskip1.5mu\}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
--- > newtype Yoda a = Yoda (String -> [(a, String)])
--- > unYoda :: Yoda a -> (String -> [(a, String)])
--- > unYoda (Yoda px) = px
-
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{65}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{77}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{yodaAlg}\mathbin{::}\Conid{ParserF}\;\Conid{Yoda}\;\Varid{a}\to \Conid{Yoda}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{yodaAlg}\;(\Conid{PureF}\;\Varid{x})\mathrel{=}\Conid{Yoda}\;(\lambda \Varid{ts}\to [\mskip1.5mu (\Varid{x},\Varid{ts})\mskip1.5mu]){}\<[E]%
-\\
-\>[3]{}\Varid{yodaAlg}\;{}\<[12]%
-\>[12]{}\Conid{EmptyF}{}\<[21]%
-\>[21]{}\mathrel{=}\Conid{Yoda}\;(\Varid{const}\;[\mskip1.5mu \mskip1.5mu]){}\<[E]%
-\\
-\>[3]{}\Varid{yodaAlg}\;(\Conid{SatisfyF}\;\Varid{c})\mathrel{=}\Conid{Yoda}\;(\lambda \mathbf{case}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}[\mskip1.5mu \mskip1.5mu]{}\<[12]%
-\>[12]{}\to [\mskip1.5mu \mskip1.5mu]{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}(\Varid{t}\mathbin{:}\Varid{ts'})\to [\mskip1.5mu (\Varid{t},\Varid{ts'})\mid \Varid{c}\;\Varid{t}\mskip1.5mu]){}\<[E]%
-\\
-\>[3]{}\Varid{yodaAlg}\;(\Conid{TryF}\;\Varid{px})\mathrel{=}\Varid{px}{}\<[E]%
-\\
-\>[3]{}\Varid{yodaAlg}\;(\Conid{ApF}\;(\Conid{Yoda}\;\Varid{pf})\;(\Conid{Yoda}\;\Varid{px}))\mathrel{=}\Conid{Yoda}\;(\lambda \Varid{ts}\to [\mskip1.5mu (\Varid{f}\;\Varid{x},\Varid{ts''})\mid (\Varid{f},\Varid{ts'}){}\<[77]%
-\>[77]{}\leftarrow \Varid{pf}\;\Varid{ts}{}\<[E]%
-\\
-\>[3]{}\hsindent{62}{}\<[65]%
-\>[65]{},(\Varid{x},\Varid{ts''})\leftarrow \Varid{px}\;\Varid{ts'}\mskip1.5mu]){}\<[E]%
-\\
-\>[3]{}\Varid{yodaAlg}\;(\Conid{OrF}\;(\Conid{Yoda}\;\Varid{px})\;(\Conid{Yoda}\;\Varid{py}))\mathrel{=}\Conid{Yoda}\;(\lambda \Varid{ts}\to \Varid{px}\;\Varid{ts}\plus \Varid{py}\;\Varid{ts}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{parse}\mathbin{::}\Conid{Parser4}\;\Varid{a}\to (\Conid{String}\to [\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]){}\<[E]%
-\\
-\>[3]{}\Varid{parse}\mathrel{=}\Varid{unYoda}\mathbin{\circ}\Varid{cata}\;\Varid{yodaAlg}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{newtype}\;\Conid{Parsec}\;\Varid{a}\mathrel{=}\Conid{Parsec}\;(\Conid{String}\to [\mskip1.5mu \Conid{String}\mskip1.5mu])\mbox{\onelinecomment  not correct}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-\section{Parameterized}
-
-Previously we saw how to add multiple types of interpretations to a shallow embedding. We used pairs to allow us to have two interpretations.
-However, this doesn't extend very well to many more interpretations. Language support starts to fade for larger tuples and it will begin to become messy.
-
-We already know that shallow embeddings are folds, so we could create a shallow embedding that is in terms of a single parameterized interterpretation.
-
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{newtype}\;\Conid{Parser7}\;\Varid{i}\mathrel{=}\Conid{P7}\;\{\mskip1.5mu \Varid{unP7}\mathbin{::}\Varid{forall}\;\Varid{a}\mathbin{\circ}(\Varid{forall}\;\Varid{j}\mathbin{\circ}\Conid{ParserF}\;\Varid{a}\;\Varid{j}\to \Varid{a}\;\Varid{j})\to \Varid{a}\;\Varid{i}\mskip1.5mu\}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{pure7}\mathbin{::}\Varid{i}\to \Conid{Parser7}\;\Varid{i}{}\<[E]%
-\\
-\>[3]{}\Varid{pure7}\;\Varid{x}\mathrel{=}\Conid{P7}\;(\lambda \Varid{h}\to \Varid{h}\;(\Conid{PureF}\;\Varid{x})){}\<[E]%
-\\
-\>[3]{}\Varid{empty7}\mathbin{::}\Conid{Parser7}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{empty7}\mathrel{=}\Conid{P7}\;(\lambda \Varid{h}\to \Varid{h}\;\Conid{EmptyF}){}\<[E]%
-\\
-\>[3]{}\Varid{satisfy7}\;\Varid{c}\mathrel{=}\Conid{P7}\;(\lambda \Varid{h}\to \Varid{h}\;(\Conid{SatisfyF}\;\Varid{c})){}\<[E]%
-\\
-\>[3]{}\Varid{try7}\mathbin{::}\Conid{Parser7}\;\Varid{a}\to \Conid{Parser7}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{try7}\;\Varid{px}\mathrel{=}\Conid{P7}\;(\lambda \Varid{h}\to \Varid{h}\;(\Conid{TryF}\;(\Varid{unP7}\;\Varid{px}\;\Varid{h}))){}\<[E]%
-\\
-\>[3]{}\Varid{ap7}\mathbin{::}\Conid{Parser7}\;(\Varid{a}\to \Varid{b})\to \Conid{Parser7}\;\Varid{a}\to \Conid{Parser7}\;\Varid{b}{}\<[E]%
-\\
-\>[3]{}\Varid{ap7}\;\Varid{pf}\;\Varid{px}\mathrel{=}\Conid{P7}\;(\lambda \Varid{h}\to \Varid{h}\;(\Conid{ApF}\;(\Varid{unP7}\;\Varid{pf}\;\Varid{h})\;(\Varid{unP7}\;\Varid{px}\;\Varid{h}))){}\<[E]%
-\\
-\>[3]{}\Varid{or7}\;\Varid{px}\;\Varid{py}\mathrel{=}\Conid{P7}\;(\lambda \Varid{h}\to \Varid{h}\;(\Conid{OrF}\;(\Varid{unP7}\;\Varid{px}\;\Varid{h})\;(\Varid{unP7}\;\Varid{py}\;\Varid{h}))){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-
-\section{Implicitly Parameterized}
-
-
-TODO
-
-
-
-
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{main}\mathbin{::}\Conid{IO}\;(){}\<[E]%
-\\
-\>[3]{}\Varid{main}\mathrel{=}\bot {}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\bibliography{biblo}
-
-
-\section{Appendix}
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{data}\;\Conid{Parser\char95 2}\mathbin{::}\mathbin{*}\to \mathbin{*}\mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Pure\char95 2}\mathbin{::}\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Satisfy\char95 2}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{Parser\char95 2}\;\Conid{Char}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Empty\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Try\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Ap\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;(\Varid{a}\to \Varid{b})\to \Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{b}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Or\char95 2}\mathbin{::}\Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}\to \Conid{Parser\char95 2}\;\Varid{a}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 \end{document}
