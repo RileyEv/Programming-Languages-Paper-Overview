@@ -7,3 +7,7 @@
 *.ptb
 *.xml
 *.bcf
+*.hi
+*.o
+*.fdb_latexmk
+*.fls

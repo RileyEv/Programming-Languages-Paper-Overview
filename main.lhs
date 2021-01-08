@@ -1,4 +1,5 @@
 %TC:envir hscode [] ignore
+%options ghci -XTypeOperators
 \documentclass[a4paper, twocolumn, 10pt]{extarticle}
 
 % Tiny borders should be default
@@ -7,44 +8,69 @@
 \setlength {\marginparwidth }{2cm}
 \usepackage{todonotes}
 % Font shit
-\usepackage{fontspec}
-\usepackage{xunicode}
-\usepackage{xcolor}
+%\usepackage{fontspec}
+%\usepackage{xunicode}
+%\usepackage{xcolor}
 
 \usepackage{libertine}
+\usepackage{url}
+\newmuskip\codemuskip
+\codemuskip=4.0mu plus 2.0mu minus 2.0mu\relax
+\newcommand\codeskip{\mskip\codemuskip}%
+\let\codefont\textsf
+\newcommand\sub[1]{\ensuremath{_{\text{#1}}}}
 
+\usepackage{xspace}
+\newcommand\keyw[1]{{\codefont{\textbf{#1}}}}
+\newcommand\id[1]{\Varid{#1}}
+\newcommand\idsym[1]{\mathbin{\id{#1}}}
+\newcommand{\vertrule}[1][1.0ex]{\rule[-0.0ex]{.45pt}{#1}}
 
-\usepackage{biblatex}
-\bibliography{biblo}
-
+\usepackage[sort, numbers]{natbib}
+\bibliographystyle{ACM-Reference-Format}
+\defcitealias{embedding}{\textit{Folding Domain-Specific Languages: Deep and Shallow Embeddings}}
 
 \usepackage{enumitem}
 \usepackage{hyphenat}
+\usepackage[switch]{lineno}
+%\linenumbers
 
 
-\title{\vspace{-10mm}An Overview of \textit{\citefield{embedding}{title}}\vspace{-4mm}}
+\title{\vspace{-10mm}An Overview of \citetalias{embedding}\vspace{-4mm}}
 \author{Riley Evans (re17105)}
 \date{\vspace{-3mm}}
- 
+
+
 %include polycode.fmt
 %include forall.fmt
-%include lambda.fmt
+
+%format `comp_` = "\cdot "
+%subst space        = "\codeskip "
+%subst char a       = "\text{\ttfamily{\textquotesingle}" a "\textquotesingle}"
+%subst backquoted a = "\mathbin{\text{\`{}}" a "\text{\`{}}}"
+
+\renewcommand\Varid[1]{\codefont{#1}}
+\let\Conid\Varid
+%format return = "\keyw{return}"
 
 \begin{document}
 \maketitle
 
 %if False
 
-> {-# LANGUAGE KindSignatures, GADTs, RankNTypes, LambdaCase #-}
+> {-# LANGUAGE  KindSignatures, GADTs, RankNTypes, LambdaCase, FlexibleInstances,
+>               GeneralizedNewtypeDeriving, TypeOperators, MultiParamTypeClasses,
+>               FlexibleContexts #-}
 > import Prelude hiding (or)
+> import Data.Coerce (coerce)
 
 %endif
 
 \section{Introduction}
 
-This is an overview of the techniques described in the paper \textit{\citefield{embedding}{title}}.
+This is an overview of the techniques described in the paper \citetalias{embedding}.
 The paper demonstrates a series of techniques that can be used when folding Domain Specific Languges.
-It does so through the use os a simple parallel prefic circuit language~\cite{scans}.
+It does so through the use of a simple parallel prefix circuit language~\cite{scans}.
 
 
 In this overview a small parser combinator language will be used.
@@ -194,9 +220,11 @@ Due to parsers being a typed language, a constant functor is required to preserv
 
 %format size4
 
+> type ParserAlg a i = ParserF a i -> a i
+>
 > newtype C a i = C { unConst :: a}
 >
-> sizeAlg :: ParserF (C Size) a -> C Size a
+> sizeAlg :: ParserAlg (C Size) i
 > sizeAlg EmptyF         = C 1
 > sizeAlg (PureF     _)  = C 1
 > sizeAlg (SatisfyF  _)  = C 1
@@ -218,7 +246,7 @@ In a deep embedding this is simple, a second algebra can be defined.
 
 > type MM = Int
 >
-> mmAlg :: ParserF (C MM) a -> C MM a
+> mmAlg :: ParserAlg (C MM) i
 > mmAlg (PureF _)           = C 0
 > mmAlg  EmptyF             = C 0
 > mmAlg (SatisfyF c)        = C 1
@@ -236,6 +264,7 @@ If many semantics are required this can become cumbersome to define.
 %format Parser5
 %format size5
 %format maxMunch5
+%format s'
 
 > type Parser5 = (Size, MM)
 >
@@ -245,7 +274,7 @@ If many semantics are required this can become cumbersome to define.
 > maxMunch5 :: Parser5 -> Size
 > maxMunch5 = snd
 >
-> smmAlg :: ParserF (C (Size, MM)) a ->  C (Size, MM) a
+> smmAlg :: ParserAlg (C (Size, MM)) a
 > smmAlg (PureF _)           = C (1,      0)
 > smmAlg EmptyF              = C (1,      0)
 > smmAlg (SatisfyF c)        = C (1,      1)
@@ -267,26 +296,29 @@ Although this is an algebra, you are able to learn the shallow embedding from th
 
 \subsection{Dependent Interpretations}
 
-zygomorphisms
-
-TODO: something in parsley. \cite{parsley}
-
-% https://github.com/J-mie6/ParsleyHaskell/blob/abe5df58cca05d8825036790f9c138183fe852b1/Parsley/Frontend/CombinatorAnalyser.hs#L70
+In a more complex parser combinator library that perform optimisations on a deep embedding,
+it could also be possible that there is a primary fold that depends on other secondary folds on parts of the AST.
+Folds such as this are named mutumorphisms~\cite{Fokkinga1989TuplingAM},
+they can be implemented by tupling the functions in the fold.
+\citet{parsley} makes use of a zygomorphism -
+a special case where the dependency is only one-way - to perform consumption analysis.
 
 
 \subsection{Context-sensitive Interpretations}
 
 
-Parsers themselves inherently require context sensitive interpretations - what you can parse will
-decide what you are able to parse in latter points of the parser.
+Parsers themselves inherently require context sensitive interpretations - what can be parsed will
+depend on what has previously been parsed.
 
-Using the semantics from~\cite{wuYoda} we are able to implement a simple parser using an accumulating fold.
+Using the semantics from~\citet{wuYoda}, an implementation can be given for a simple parser using an accumulating fold.
 
+%format ts'
+%format ts''
 
 > newtype Y a = Y {unYoda :: String -> [(a, String)]}
 
 
-> yAlg :: ParserF Y a -> Y a
+> yAlg :: ParserAlg Y i
 > yAlg (PureF x)     = Y $ \ts -> [(x, ts)]
 > yAlg  EmptyF       = Y $ const []
 > yAlg (SatisfyF c)  = Y $ \ case
@@ -304,12 +336,6 @@ Using the semantics from~\cite{wuYoda} we are able to implement a simple parser 
 
 \subsection{Parameterized Interpretations}
 
-Previously we saw how to add multiple types of interpretations to a shallow embedding. We used pairs to allow us to have two interpretations.
-However, this doesn't extend very well to many more interpretations. Language support starts to fade for larger tuples and it will begin to become messy.
-
-We already know that shallow embeddings are folds, so we could create a shallow embedding that is in terms of a single parameterized interterpretation.
-
-
 %format Parser7
 %format pure7
 %format empty7
@@ -317,11 +343,23 @@ We already know that shallow embeddings are folds, so we could create a shallow 
 %format try7
 %format ap7
 %format or7
+%format P7
+%format unP7
+
+Previously, when defining multiple interpretations in a shallow embedding, a tuple was used.
+However, this does not extend well when many interpretations are needed.
+Large tuples tend to lack good language support and will become messy to work with.
+It would be beneficial if a shallow embedding could have a parameter that gives it the interpretation.
+
+|Parser7| allows for this approach,
+the shallow embedding is made up of first class functions that require an algebra argument.
+This algebra describes how the shallow embedding should fold the structure.
+
 
 > newtype Parser7 i = P7
 >   {unP7 :: forall a . ( forall j . ParserF a j -> a j) -> a i}
 >
-> pure7 :: i -> Parser7 i
+> pure7 :: a -> Parser7 a
 > pure7 x = P7 (\h -> h (PureF x))
 >
 > empty7 :: Parser7 a
@@ -339,22 +377,216 @@ We already know that shallow embeddings are folds, so we could create a shallow 
 > or7 :: Parser7 a -> Parser7 a -> Parser7 a
 > or7 px py = P7 (\h -> h (OrF (unP7 px h) (unP7 py h)))
 
+One benefit of this approach is that it allows the shallow embedding to be converted to a deep embedding.
 
-\subsection{Implicitly Parameterized Interpretations}
+> deep :: Parser7 a -> Parser4 a
+> deep parser = unP7 parser In
 
-TODO
+
+Simillarly it is possible to convert a deep embedding into a parameterised shallow embedding.
+
+> shallow :: Parser4 a -> Parser7 a
+> shallow = cata shallowAlg
+>
+> shallowAlg :: ParserAlg Parser7 i
+> shallowAlg (PureF x)     = pure7 x
+> shallowAlg EmptyF        = empty7
+> shallowAlg (SatisfyF c)  = satisfy7 c
+> shallowAlg (TryF px)     = try7 px
+> shallowAlg (ApF pf px)   = ap7 pf px
+> shallowAlg (OrF px py)   = or7 px py
+
+Being able to convert between both types of embedding,
+demonstrates that deep and parameterised shallow embeddings are inverses of each other.
+
+
+\subsection{Implicitly Parameterised Interpretations}
+
+The previous parameterised implementation still required the algebra to be specified.
+It would be helpful if it could be passed implicitly, if it can be determined from the type of the interpretation.
+This is possible in Haskell through the use of a type class.
+
+%format Parser8
+%format pure8
+%format empty8
+%format satisfy8
+%format try8
+%format ap8
+%format or8
+%format Size8
+
+> class Parser8 parser where
+>   empty8    :: parser a
+>   pure8     :: a -> parser a
+>   satisfy8  :: (Char -> Bool)   -> parser Char
+>   try8      :: parser a         -> parser a
+>   ap8       :: parser (a -> b)  -> parser a -> parser b
+>   or8       :: parser a         -> parser a -> parser a
+
+> newtype Size8 i = Size {unSize :: Int} deriving Num
+
+> instance Parser8 Size8 where
+>   empty8      = 1
+>   pure8 _     = 1
+>   satisfy8 _  = 1
+>   try8 px     = px + 1
+>   ap8 pf px   = coerce pf + coerce px + 1
+>   or8 px py   = px + py + 1
+
+|coerce| allows for conversion between types that have the same runtime representation.
+This is the case for |Size8| and |Int|.
+To be able to reuse the previously defined algebras, a different type class can be defined.
+
+%format Parser9
+
+> class Parser9 parser where
+>   alg :: ParserAlg parser i
+>
+> instance Parser9 Size8 where
+>   alg = coerce . sizeAlg . imap coerce
+
+
+
 
 \subsection{Modular Interpretations}
 
-TODO
+There may be times when adding extra combinators would be convenient, for example adding a 'many' operator that allows for
+A modular technique to assembling DSLs would aid this process.
+
+%format Empty10
+%format Pure10
+%format Satisfy10
+%format Try10
+%format Ap10
+%format Or10
+%format ParserF10
+%format Parser10
+%format aorb10
+%format :+: = ":\!\!+\!\!:"
+
+
+> data Empty10 (k :: * -> *) (a :: *) where
+>   Empty10 :: Empty10 k a
+>
+> data Pure10 (k :: * -> *) (a :: *) where
+>   Pure10 :: a -> Pure10 k a
+>
+> data Satisfy10 (k :: * -> *) (a :: *) where
+>   Satisfy10 :: (Char -> Bool) -> Satisfy10 k Char
+>
+> data Try10 (k :: * -> *) (a :: *) where
+>   Try10 :: k a -> Try10 k a
+>
+> data Ap10 (k :: * -> *) (a :: *) where
+>   Ap10 :: k (a -> b) -> k a -> Ap10 k b
+>
+> data Or10 (k :: * -> *) (a :: *) where
+>   Or10 :: k a -> k a -> Or10 k a
+
+
+> data (f :+: g) (k :: * -> *) (a :: *) where
+>   L :: f k a -> (f :+: g) k a
+>   R :: g k a -> (f :+: g) k a
+> infixr :+:
+>
+> instance (IFunctor f, IFunctor g)
+>     => IFunctor (f :+: g) where
+>   imap f (L x) = L (imap f x)
+>   imap f (R y) = R (imap f y)
+
+> type ParserF10  =    Empty10  :+:  Pure10  :+:  Satisfy10
+>                 :+:  Try10    :+:  Ap10    :+:  Or10
+>
+> type Parser10 = Fix ParserF10
+
+
+> aorb10 :: Parser10 Char
+> aorb10 = In (R (R (R (R (R (Or10
+>            (In (R (R (L (Satisfy10 (=='a'))))))
+>            (In (R (R (L (Satisfy10 (=='b'))))))))))))
+
+
+%format empty10
+%format pure10
+%format satisfy10
+%format try10
+%format ap10
+%format or10
+%format aorb10'
+%format :<: = ":\prec:"
+
+
+> class (IFunctor f, IFunctor g) => f :<: g where
+>   inj :: f k a -> g k a
+>
+> instance IFunctor f => f :<: f where
+>   inj = id
+>
+> instance {-# OVERLAPPING #-} (IFunctor f, IFunctor g) => f :<: (f :+: g) where
+>   inj = L
+>
+> instance (IFunctor f, IFunctor g, IFunctor h, f :<: g) => f :<: (h :+: g) where
+>   inj = R . inj
+
+Smart constructors:
+
+> empty10 :: (Empty10 :<: f) => Fix f a
+> empty10 = In (inj Empty10)
+>
+> pure10 :: (Pure10 :<: f) => a -> Fix f a
+> pure10 x = In (inj (Pure10 x))
+>
+> satisfy10 :: (Satisfy10 :<: f) => (Char -> Bool) -> Fix f Char
+> satisfy10 c = In (inj (Satisfy10 c))
+>
+> try10 :: (Try10 :<: f) => Fix f a -> Fix f a
+> try10 px = In (inj (Try10 px))
+>
+> ap10 :: (Ap10 :<: f) => Fix f (a -> b) -> Fix f a -> Fix f b
+> ap10 pf px = In (inj (Ap10 pf px))
+>
+> or10 :: (Or10 :<: f) => Fix f a -> Fix f a -> Fix f a
+> or10 px py = In (inj (Or10 px py))
 
 
 
+> aorb10' :: (Or10 :<: f, Satisfy10 :<: f) => Fix f Char
+> aorb10' = satisfy10 (== 'a') `or10` satisfy10 (== 'b')
 
 
-\printbibliography
+%format sizeAlg10
+%format size10
 
 
+> class IFunctor f => SizeAlg f where
+>   sizeAlg10 :: f Size8 i -> Size8 i
+>
+> instance (SizeAlg f, SizeAlg g) => SizeAlg (f :+: g) where
+>   sizeAlg10 (L x) = sizeAlg10 x
+>   sizeAlg10 (R y) = sizeAlg10 y
+>
+> instance SizeAlg Or10 where
+>   sizeAlg10 (Or10 px py) = px + py + 1
+>
+> instance SizeAlg Satisfy10 where
+>   sizeAlg10 (Satisfy10 _) = 1
+
+
+> size10 :: SizeAlg f => Fix f a -> Size8 a
+> size10 = cata sizeAlg10
+>
+> test :: Size
+> test = coerce (size10 (aorb10' :: (Fix (Or10 :+: Satisfy10)) Char))
+
+
+
+\eval{:t size10}
+\eval{size10 (aorb10' :: Parser10)}
+
+
+\bibliography{biblo}
+
+\appendix
 \section{Appendix}
 
 %if False
@@ -373,6 +605,14 @@ TODO
 > size  (Ap2 pf px)   =  1 +  size pf  + size px
 > size  (Or2 px py)   =  1 +  size px  + size py
 
+%format Parser3
+%format pure3
+%format satisfy3
+%format empty3
+%format try3
+%format ap3
+%format or3
+%format size3
 
 > type Parser3 a = Int
 > pure3 _ = 1
@@ -392,5 +632,25 @@ TODO
 > newtype Fix f a = In (f (Fix f) a)
 > cata :: IFunctor f => (forall i . f a i -> a i) -> Fix f i -> a i
 > cata alg (In x) = alg (imap (cata alg) x)
+
+
+> instance IFunctor Empty10 where
+>   imap _ Empty10 = Empty10
+>
+> instance IFunctor Pure10 where
+>   imap _ (Pure10 x) = Pure10 x
+>
+> instance IFunctor Satisfy10 where
+>   imap _ (Satisfy10 c) = Satisfy10 c
+>
+> instance IFunctor Try10 where
+>   imap f (Try10 px) = Try10 $ f px
+>
+> instance IFunctor Ap10 where
+>   imap f (Ap10 pf px) = Ap10 (f pf) (f px)
+>
+> instance IFunctor Or10 where
+>   imap f (Or10 px py) = Or10 (f px) (f py)
+
 
 \end{document}

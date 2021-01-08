@@ -1,5 +1,2 @@
-lhs2tex main.lhs > main.tex
-
-xelatex main
-biber main
-xelatex main
+lhs2TeX main.lhs > main.tex
+texfot --no-stderr latexmk -interaction=nonstopmode -pdf -no-shell-escape -bibtex -jobname=main main.tex
