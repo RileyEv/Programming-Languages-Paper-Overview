@@ -575,13 +575,11 @@ Smart constructors:
 > size10 :: SizeAlg f => Fix f a -> Size8 a
 > size10 = cata sizeAlg10
 >
-> test :: Size
-> test = coerce (size10 (aorb10' :: (Fix (Or10 :+: Satisfy10)) Char))
+> eval :: Size
+> eval = coerce (size10 (aorb10' :: (Fix (Or10 :+: Satisfy10)) Char))
 
 
 
-\eval{:t size10}
-\eval{size10 (aorb10' :: Parser10)}
 
 
 \bibliography{biblo}
