@@ -43,6 +43,7 @@
 
 %include polycode.fmt
 %include forall.fmt
+%include spacing.fmt
 
 %format `comp_` = "\cdot "
 %subst space        = "\codeskip "
@@ -170,10 +171,17 @@ This can be interpretted by defining a function such as |size|, that finds the s
 |size| interprets the deep embedding, by folding over the datatype.
 See the appendix for how to add an interpretation with a shallow embedding.
 
+> type Size = Int
+> size :: Parser2 a -> Size
+> size  Empty2        =  1
+> size  (Pure2 _)     =  1
+> size  (Satisfy2 _)  =  1
+> size  (Try2 px)     =  1 +  size px
+> size  (Ap2 pf px)   =  1 +  size pf  + size px
+> size  (Or2 px py)   =  1 +  size px  + size py
 
 \section{Folds}
 
-It is possible to capture the shape of an abstract datatype through the |Functor| type class.
 It is possible to capture the shape of an abstract datatype as a |Functor|.
 The use of a |Functor| allows for the specification of where a datatype recurses.
 There is however one problem, a functor expresing the parser language is required to be typed.
@@ -204,7 +212,7 @@ The shape of |Parser2|, can be seen in |ParserF| where the |k a| marks the recur
 %format Parser4
 
 |Fix| is used to get the fixed point of the functor.
-It contains the structure needed to make the datatype recursive.
+It contains the structure needed to allow the datatype to recursive.
 |Parser4| is the fixed point of |ParserF|.
 
 > type Parser4 a = Fix ParserF a
@@ -239,7 +247,7 @@ Due to parsers being a typed language, a constant functor is required to preserv
 \subsection{Multiple Interpretations}
 
 In DSLs it is common to want to evaluate multiple interpretations.
-For example, a parser may also want to know the maximum characters it will read (maximum munch).
+For example, a parser may also want to know the maximum number of characters it will read (maximum munch).
 In a deep embedding this is simple, a second algebra can be defined.
 
 %format maxMunch4
@@ -247,10 +255,10 @@ In a deep embedding this is simple, a second algebra can be defined.
 > type MM = Int
 >
 > mmAlg :: ParserAlg (C MM) i
-> mmAlg (PureF _)           = C 0
-> mmAlg  EmptyF             = C 0
-> mmAlg (SatisfyF c)        = C 1
-> mmAlg (TryF (C px))       = C px
+> mmAlg EmptyF         = C 0
+> mmAlg (PureF _)      = C 0
+> mmAlg (SatisfyF c)   = C 1
+> mmAlg (TryF (C px))  = C px
 > mmAlg (ApF (C pf) (C px)) = C $ pf + px
 > mmAlg (OrF (C px) (C py)) = C $ max px py
 >
@@ -275,8 +283,8 @@ If many semantics are required this can become cumbersome to define.
 > maxMunch5 = snd
 >
 > smmAlg :: ParserAlg (C (Size, MM)) a
-> smmAlg (PureF _)           = C (1,      0)
 > smmAlg EmptyF              = C (1,      0)
+> smmAlg (PureF _)           = C (1,      0)
 > smmAlg (SatisfyF c)        = C (1,      1)
 > smmAlg (TryF (C (s, mm)))  = C (s + 1,  mm)
 > smmAlg (ApF  (C (s, mm)) (C (s', mm')))
@@ -298,10 +306,9 @@ Although this is an algebra, you are able to learn the shallow embedding from th
 
 In a more complex parser combinator library that perform optimisations on a deep embedding,
 it could also be possible that there is a primary fold that depends on other secondary folds on parts of the AST.
-Folds such as this are named mutumorphisms~\cite{Fokkinga1989TuplingAM},
+Folds such as this are named zygomorphisms~\cite{Fokkinga1989TuplingAM} - a special case of a mutomorphism -
 they can be implemented by tupling the functions in the fold.
-\citet{parsley} makes use of a zygomorphism -
-a special case where the dependency is only one-way - to perform consumption analysis.
+\citet{parsley} makes use of a zygomorphism to perform consumption analysis.
 
 
 \subsection{Context-sensitive Interpretations}
@@ -319,8 +326,8 @@ Using the semantics from~\citet{wuYoda}, an implementation can be given for a si
 
 
 > yAlg :: ParserAlg Y i
+> yAlg EmptyF       = Y $ const []
 > yAlg (PureF x)     = Y $ \ts -> [(x, ts)]
-> yAlg  EmptyF       = Y $ const []
 > yAlg (SatisfyF c)  = Y $ \ case
 >   []       -> []
 >   (t:ts')  -> [(t, ts') | c t]
@@ -359,11 +366,11 @@ This algebra describes how the shallow embedding should fold the structure.
 > newtype Parser7 i = P7
 >   {unP7 :: forall a . ( forall j . ParserF a j -> a j) -> a i}
 >
-> pure7 :: a -> Parser7 a
-> pure7 x = P7 (\h -> h (PureF x))
->
 > empty7 :: Parser7 a
 > empty7 = P7 (\h -> h EmptyF)
+>
+> pure7 :: a -> Parser7 a
+> pure7 x = P7 (\h -> h (PureF x))
 >
 > satisfy7 :: (Char -> Bool) -> Parser7 Char
 > satisfy7 c = P7 (\h -> h (SatisfyF c))
@@ -389,8 +396,8 @@ Simillarly it is possible to convert a deep embedding into a parameterised shall
 > shallow = cata shallowAlg
 >
 > shallowAlg :: ParserAlg Parser7 i
-> shallowAlg (PureF x)     = pure7 x
 > shallowAlg EmptyF        = empty7
+> shallowAlg (PureF x)     = pure7 x
 > shallowAlg (SatisfyF c)  = satisfy7 c
 > shallowAlg (TryF px)     = try7 px
 > shallowAlg (ApF pf px)   = ap7 pf px
@@ -417,7 +424,7 @@ This is possible in Haskell through the use of a type class.
 
 > class Parser8 parser where
 >   empty8    :: parser a
->   pure8     :: a -> parser a
+>   pure8     :: a                -> parser a
 >   satisfy8  :: (Char -> Bool)   -> parser Char
 >   try8      :: parser a         -> parser a
 >   ap8       :: parser (a -> b)  -> parser a -> parser b
@@ -450,9 +457,6 @@ To be able to reuse the previously defined algebras, a different type class can 
 
 \subsection{Modular Interpretations}
 
-There may be times when adding extra combinators would be convenient, for example adding a 'many' operator that allows for
-A modular technique to assembling DSLs would aid this process.
-
 %format Empty10
 %format Pure10
 %format Satisfy10
@@ -464,6 +468,22 @@ A modular technique to assembling DSLs would aid this process.
 %format aorb10
 %format :+: = ":\!\!+\!\!:"
 
+There may be times when adding extra combinators would be convenient, for example adding a 'string' operator.
+A modular technique to assembling DSLs would aid this process.
+This approach is described in Data types à la carte~\cite{datatypesalacarte}.
+An |:+:| operator can be defined to specify a choice between constructors.
+
+> data (f :+: g) (k :: * -> *) (a :: *) where
+>   L :: f k a -> (f :+: g) k a
+>   R :: g k a -> (f :+: g) k a
+> infixr :+:
+>
+> instance  (IFunctor f, IFunctor g)
+>           => IFunctor (f :+: g) where
+>   imap  f (L x) = L (imap f x)
+>   imap  f (R y) = R (imap f y)
+
+Now the datatypes can be defined for each constructor that is required. The |IFunctor| instances for each constructor can be found in the appendix.
 
 > data Empty10 (k :: * -> *) (a :: *) where
 >   Empty10 :: Empty10 k a
@@ -483,28 +503,19 @@ A modular technique to assembling DSLs would aid this process.
 > data Or10 (k :: * -> *) (a :: *) where
 >   Or10 :: k a -> k a -> Or10 k a
 
-
-> data (f :+: g) (k :: * -> *) (a :: *) where
->   L :: f k a -> (f :+: g) k a
->   R :: g k a -> (f :+: g) k a
-> infixr :+:
->
-> instance (IFunctor f, IFunctor g)
->     => IFunctor (f :+: g) where
->   imap f (L x) = L (imap f x)
->   imap f (R y) = R (imap f y)
+The datatypes are now summed together to form a single |ParserF10| type.
 
 > type ParserF10  =    Empty10  :+:  Pure10  :+:  Satisfy10
 >                 :+:  Try10    :+:  Ap10    :+:  Or10
 >
 > type Parser10 = Fix ParserF10
 
+There is however, one problem with this approach: there is now a mess of |L| and |R|'s. This makes this approach inconvenient to use.
 
 > aorb10 :: Parser10 Char
 > aorb10 = In (R (R (R (R (R (Or10
 >            (In (R (R (L (Satisfy10 (=='a'))))))
 >            (In (R (R (L (Satisfy10 (=='b'))))))))))))
-
 
 %format empty10
 %format pure10
@@ -515,6 +526,9 @@ A modular technique to assembling DSLs would aid this process.
 %format aorb10'
 %format :<: = ":\prec:"
 
+Data types à la carte~\cite{datatypesalacarte}, however, describes a technique that allows for the injection of these |L|'s and |R|'s.
+The notion of subtypes between functors, can be specified using the |:<:| operator.
+
 
 > class (IFunctor f, IFunctor g) => f :<: g where
 >   inj :: f k a -> g k a
@@ -522,13 +536,18 @@ A modular technique to assembling DSLs would aid this process.
 > instance IFunctor f => f :<: f where
 >   inj = id
 >
-> instance {-# OVERLAPPING #-} (IFunctor f, IFunctor g) => f :<: (f :+: g) where
->   inj = L
+> instance  {-# OVERLAPPING #-}
+>           (IFunctor f, IFunctor g)
+>           => f :<: (f :+: g) where
+>   inj  = L
 >
-> instance (IFunctor f, IFunctor g, IFunctor h, f :<: g) => f :<: (h :+: g) where
+> instance  (IFunctor f, IFunctor g,
+>           IFunctor h, f :<: g)
+>           => f :<: (h :+: g) where
 >   inj = R . inj
 
-Smart constructors:
+
+Smart constructors are defined that allow for the |L|'s and |R|'s to be injected.
 
 > empty10 :: (Empty10 :<: f) => Fix f a
 > empty10 = In (inj Empty10)
@@ -536,7 +555,8 @@ Smart constructors:
 > pure10 :: (Pure10 :<: f) => a -> Fix f a
 > pure10 x = In (inj (Pure10 x))
 >
-> satisfy10 :: (Satisfy10 :<: f) => (Char -> Bool) -> Fix f Char
+> satisfy10 :: (Satisfy10 :<: f)  => (Char -> Bool)
+>                                 -> Fix f Char
 > satisfy10 c = In (inj (Satisfy10 c))
 >
 > try10 :: (Try10 :<: f) => Fix f a -> Fix f a
@@ -550,6 +570,9 @@ Smart constructors:
 
 
 
+Now the smart constructors can be used to form an expression |aorb10'|.
+The type contraints on this expression allow for |f| to be flexible, so long as |Or10| and |Satisfy10| are subtypes of the functor |f|.
+
 > aorb10' :: (Or10 :<: f, Satisfy10 :<: f) => Fix f Char
 > aorb10' = satisfy10 (== 'a') `or10` satisfy10 (== 'b')
 
@@ -557,29 +580,53 @@ Smart constructors:
 %format sizeAlg10
 %format size10
 
+To be able to give an interpretation an algebra is still required.
+Simillarly to the constructors the algebra needs to be modularized.
+A type class can be defined that provides the algebra to fold each constructor.
+
+
 
 > class IFunctor f => SizeAlg f where
 >   sizeAlg10 :: f Size8 i -> Size8 i
 >
-> instance (SizeAlg f, SizeAlg g) => SizeAlg (f :+: g) where
+> instance  (SizeAlg f, SizeAlg g)
+>           => SizeAlg (f :+: g) where
 >   sizeAlg10 (L x) = sizeAlg10 x
 >   sizeAlg10 (R y) = sizeAlg10 y
->
+
+One benefit to this approach is that if an interpretation is only needed for parsers that use |or10| and |satisfy10|,
+then only those instances need to be defined.
+Take calculating the size of the parser |aorb10'|, only the two instances need to be defined to do so.
+
+
 > instance SizeAlg Or10 where
 >   sizeAlg10 (Or10 px py) = px + py + 1
 >
 > instance SizeAlg Satisfy10 where
 >   sizeAlg10 (Satisfy10 _) = 1
 
-
 > size10 :: SizeAlg f => Fix f a -> Size8 a
 > size10 = cata sizeAlg10
 >
 > eval :: Size
-> eval = coerce (size10 (aorb10' :: (Fix (Or10 :+: Satisfy10)) Char))
+> eval = coerce  (size10 (aorb10' :: (
+>                Fix (Or10 :+: Satisfy10)) Char))
+
+%format Circuit11
+%format WidthAlg11
+%format Fan11
+%format Stretch11
+
+The type of |aorb10'| is required to be specified.
+This is so that the compiler knows the top level functor being used and the constructors included in it.
+There could possibly an error in the paper here as it uses |Circuit11|.
+This requires that the |WidthAlg11| instances be defined for all constructors in |Circuit11|, however, only |Fan11| and |Stretch11| have been.
+To rectify this type error |stretchfan| should be given the type |stretchfan :: Fix (Fan11 :+: Stretch11)|.
 
 
-
+\section{Conclusion}
+This overview has walked through the techniques described in the paper and applied them to a typed Domain Specific Langugae.
+It aims to highlight the correspondence of shallow embeddings to algebras of deep embeddings.
 
 
 \bibliography{biblo}
@@ -594,14 +641,6 @@ Smart constructors:
 
 %endif
 
-> type Size = Int
-> size :: Parser2 a -> Size
-> size  Empty2        =  1
-> size  (Pure2 _)     =  1
-> size  (Satisfy2 _)  =  1
-> size  (Try2 px)     =  1 +  size px
-> size  (Ap2 pf px)   =  1 +  size pf  + size px
-> size  (Or2 px py)   =  1 +  size px  + size py
 
 %format Parser3
 %format pure3
