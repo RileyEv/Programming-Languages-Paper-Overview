@@ -201,6 +201,7 @@ The shape of |Parser2|, can be seen in |ParserF| where the |f a| marks the recur
 >   ApF      :: f (a -> b)      -> f a   -> ParserF f b
 >   OrF      :: f a             -> f a   -> ParserF f a
 
+
 The |IFunctor| instance can be found in the appendix~\ref{app:ifunctor-parserf}.
 It follows the same structure as a standard |Functor| instance.
 
@@ -218,7 +219,7 @@ It provides the structure needed to allow the datatype to recursive.
 
 A mechanism is now required for folding this abstract datatype.
 This is possible through the use of a \textit{catamorphism}, which is a generalised way of folding an abstract datatype.
-The commutative diagram below describes how a \textit{catamorphism} can be defined.
+The commutative diagram below describes how a \textit{catamorphism} can be defined, that folds a |Fix iF a| to |f a|.
 Firstly, a layer of |Fix| is peeled off by removing an |In| to give |iF (Fix iF) a|.
 Then a recursive call is made to fold the structure below in the AST.
 This results in a item of type |iF f a|.
@@ -262,7 +263,6 @@ It allows a type with kind |*| to have kind |* -> *|, in a similar way to how th
 
 Now, all the building blocks have been defined that allow for the folding of the parser DSL.
 |size| can be redefined as a fold, that is determined by the |sizeAlg|.
-Due to parsers being a typed language, a constant functor is required to preserve the type indices.
 
 %format size4
 
@@ -343,7 +343,7 @@ with the corresponding constructor from the deep embedding, for example:
 
 \subsection{Dependent Interpretations}
 
-In a more complex parser combinator library that perform optimisations on a deep embedding,
+In a more complex parser combinator library that performs optimisations on a deep embedding,
 it could also be possible that there is a primary fold that depends on other secondary folds on parts of the AST.
 Folds such as this are named \textit{zygomorphisms}~\cite{Fokkinga1989TuplingAM} - a special case of a \textit{mutomorphism} -
 they can be implemented by tupling the functions in the fold.
@@ -602,7 +602,7 @@ Two examples are given, the other smart constructors can be found in Appendix~\r
 > or10 px py = In (inj (Or10 px py))
 
 Now the smart constructors can be used to form an expression |aorb10'|.
-The type contraints on this expression allow for |f| to be flexible, so long as |Or10| and |Satisfy10| are subtypes of the functor |f|.
+The type contraints on this expression allow for |iF| to be flexible, so long as |Or10| and |Satisfy10| are subtypes of the |IFunctor| |iF|.
 
 > aorb10' :: (Or10 :<: iF, Satisfy10 :<: iF) => Fix iF Char
 > aorb10' = satisfy10 (== 'a') `or10` satisfy10 (== 'b')
@@ -627,7 +627,7 @@ A type class can be defined that provides the algebra to fold each constructor.
 
 One benefit to this approach is that if an interpretation is only needed for parsers that use |or10| and |satisfy10|,
 then only those instances need to be defined.
-Take calculating the size of the parser |aorb10'|, only the two instances need to be defined to do so.
+Take calculating the size of the parser |aorb10'| as an example, only the two instances need to be defined to do so.
 
 
 > instance SizeAlg Or10 where
