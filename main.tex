@@ -34,6 +34,9 @@
 \usepackage[switch]{lineno}
 %\linenumbers
 
+\usepackage{todonotes}
+\usepackage{tikz-cd}
+
 
 \title{\vspace{-10mm}An Overview of \citetalias{embedding}\vspace{-4mm}}
 \author{Riley Evans (re17105)}
@@ -355,21 +358,11 @@ The paper demonstrates a series of techniques that can be used when folding Doma
 It does so through the use of a simple parallel prefix circuit language~\cite{scans}.
 
 
-In this overview a small parser combinator language will be used.
+In this overview a small parser combinator language embedded into Haskell will be used.
 This language brings one key feature that was not described in the paper: how to apply these techniques to a typed language.
 Only a minimal functionally complete set of combinators have been included in the language to keep it simple.
-However, all other combinators usually found in a combinator language can be contructed from this set.
+However, all other combinators usually found in a combinator language can be constructed from this set.
 
-
-%% The paper takes an example Domain Specific Language and then demonstrates a series of techniques that are helpful for folding them.
-
-
-
-
-
-%% What is the paper? What are its core ideas?
-
-%% How will the techniques be demoed? Pros/Cons of why they are useful for the parsing language.
 
 
 \section{Background}
@@ -379,13 +372,13 @@ However, all other combinators usually found in a combinator language can be con
 A Domain Specific Language (DSL) is a programming language that has a specialised domain or use-case.
 This differs from a General Purpose Language (GPL), which can be applied across a larger set of domains.
 DSLs can be split into two different categories: standalone and embedded. Standalone DSLs require their own compiler and typically have their own syntax.
-Embedded DSLs use a GPL as a host language, therefore they use the syntax and compiler from that GPL.
+Embedded DSLs use an exisiting language as a host, therefore they use the syntax and compiler from that language.
 This means that they are easier to maintain and are often quicker to develop than standalone DSLs.
 
 An embedded DSL can be implemented with two main techniques.
 Firstly, a deep approach can be taken, this means that terms in the DSL will construct an Abstract Syntax Tree (AST) as a host language datatype.
 This can then be used to apply optimisations and then evaluated.
-A second approach is to define the terms as first class components of the language, avoiding the creation of an AST - this is known as a shallow embedding.
+A second approach known as a shallow embedding, is to define the terms as first class components of the language. An example of this could be a function in Haskell. This approach avoids the creation of an AST.
 
 
 \subsection{Parsers}
@@ -394,10 +387,12 @@ A parser is a used to convert a series of tokens into another language.
 For example converting a string into a Haskell datatype.
 Parser combinators provide a flexible approach to constructing parsers.
 Unlike parser generators, a combinator library is embedded within a host language: using combinators to construct the grammar.
-This makes it a suitable to demonstrate the techniques descriped in this paper for folding the DSL to create parsers.
+This makes it a suitable to demonstrate the techniques described in this paper for folding the DSL to create parsers.
 
-The langauge is made up of 6 terms, they provide all the essential operations needed in a parser.
+The language is made up of 6 terms, they provide all the essential operations needed in a parser.
 
+
+\pagebreak
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -455,7 +450,7 @@ For example, a parser that can parse the characters \ensuremath{\text{\ttfamily{
 \ColumnHook
 \end{hscode}\resethooks
 
-A deep embedding of this parser language is defined in the alegebraic datatype:
+A deep embedding of this parser language is defined in the algebraic datatype:
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -519,9 +514,9 @@ A deep embedding of this parser language is defined in the alegebraic datatype:
 \ColumnHook
 \end{hscode}\resethooks
 
-This can be interpretted by defining a function such as \ensuremath{\Varid{size}}, that finds the size of the AST used to construct the parser - this can be found in the appendix.
+This can be interpreted by defining a function such as \ensuremath{\Varid{size}}, which finds the size of the AST used to construct the parser.
 \ensuremath{\Varid{size}} interprets the deep embedding, by folding over the datatype.
-See the appendix for how to add an interpretation with a shallow embedding.
+See the appendix~\ref{app:shallow-size} for how to add an interpretation with a shallow embedding.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -576,14 +571,26 @@ See the appendix for how to add an interpretation with a shallow embedding.
 
 It is possible to capture the shape of an abstract datatype as a \ensuremath{\Conid{Functor}}.
 The use of a \ensuremath{\Conid{Functor}} allows for the specification of where a datatype recurses.
-There is however one problem, a functor expresing the parser language is required to be typed.
+There is, however, one problem: a \ensuremath{\Conid{Functor}} expressing the parser language is required to be typed.
 Parsers require the type of the tokens being parsed.
-For example a parser reading tokens that make up an expression could have the type \ensuremath{\Conid{Parser}\codeskip \Conid{Expr}}.
-A functor does not retain the type of the parser, therefore it is required to define a special type class called \ensuremath{\Conid{IFunctor}}, which is able to maintain the type indicies~\cite{mcbride2011functional}.
-A full definition can be found in the appendix.
+For example, a parser reading tokens that make up an expression could have the type \ensuremath{\Conid{Parser}\codeskip \Conid{Expr}}.
+A \ensuremath{\Conid{Functor}} does not retain the type of the parser. Instead a type class called \ensuremath{\Conid{IFunctor}} will be used,
+which is able to maintain the type indicies~\cite{mcbride2011functional}.
+This can be thought of as a functor transformer:
+it is able to change the structure of a functor whilst preserving the values inside it.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{class}\codeskip \Conid{IFunctor}\codeskip \Varid{iF}\codeskip \mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\mathbin{::}(\forall \Varid{a}\hsforall \hsdot{\cdot }{.}\Varid{f}\codeskip \Varid{a}\to \Varid{g}\codeskip \Varid{a})\to \Varid{iF}\codeskip \Varid{f}\codeskip \Varid{a}\to \Varid{iF}\codeskip \Varid{g}\codeskip \Varid{a}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
 
-The shape of \ensuremath{\Conid{Parser}_{2}}, can be seen in \ensuremath{\Conid{ParserF}} where the \ensuremath{\Varid{k}\codeskip \Varid{a}} marks the recursive spots.
-
+The shape of \ensuremath{\Conid{Parser}_{2}}, can be seen in \ensuremath{\Conid{ParserF}} where the \ensuremath{\Varid{f}\codeskip \Varid{a}} marks the recursive spots.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -592,85 +599,52 @@ The shape of \ensuremath{\Conid{Parser}_{2}}, can be seen in \ensuremath{\Conid{
 \column{33}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{42}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{data}\codeskip \Conid{ParserF}\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{data}\codeskip \Conid{ParserF}\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Conid{EmptyF}{}\<[14]%
-\>[14]{}\mathbin{::}\Conid{ParserF}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[14]{}\mathbin{::}\Conid{ParserF}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Conid{PureF}{}\<[14]%
 \>[14]{}\mathbin{::}\Varid{a}{}\<[33]%
-\>[33]{}\to \Conid{ParserF}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[33]{}\to \Conid{ParserF}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Conid{SatisfyF}\mathbin{::}(\Conid{Char}\to \Conid{Bool}){}\<[33]%
-\>[33]{}\to \Conid{ParserF}\codeskip \Varid{k}\codeskip \Conid{Char}{}\<[E]%
+\>[33]{}\to \Conid{ParserF}\codeskip \Varid{f}\codeskip \Conid{Char}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Conid{TryF}{}\<[14]%
-\>[14]{}\mathbin{::}\Varid{k}\codeskip \Varid{a}{}\<[33]%
-\>[33]{}\to \Conid{ParserF}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[14]{}\mathbin{::}\Varid{f}\codeskip \Varid{a}{}\<[33]%
+\>[33]{}\to \Conid{ParserF}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Conid{ApF}{}\<[14]%
-\>[14]{}\mathbin{::}\Varid{k}\codeskip (\Varid{a}\to \Varid{b}){}\<[33]%
-\>[33]{}\to \Varid{k}\codeskip \Varid{a}{}\<[42]%
-\>[42]{}\to \Conid{ParserF}\codeskip \Varid{k}\codeskip \Varid{b}{}\<[E]%
+\>[14]{}\mathbin{::}\Varid{f}\codeskip (\Varid{a}\to \Varid{b}){}\<[33]%
+\>[33]{}\to \Varid{f}\codeskip \Varid{a}{}\<[42]%
+\>[42]{}\to \Conid{ParserF}\codeskip \Varid{f}\codeskip \Varid{b}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Conid{OrF}{}\<[14]%
-\>[14]{}\mathbin{::}\Varid{k}\codeskip \Varid{a}{}\<[33]%
-\>[33]{}\to \Varid{k}\codeskip \Varid{a}{}\<[42]%
-\>[42]{}\to \Conid{ParserF}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[14]{}\mathbin{::}\Varid{f}\codeskip \Varid{a}{}\<[33]%
+\>[33]{}\to \Varid{f}\codeskip \Varid{a}{}\<[42]%
+\>[42]{}\to \Conid{ParserF}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+The \ensuremath{\Conid{IFunctor}} instance can be found in the appendix~\ref{app:ifunctor-parserf}.
+It follows the same structure as a standard \ensuremath{\Conid{Functor}} instance.
+
+
+\ensuremath{\Conid{Fix}} is used to get the fixed point of a functor.
+It provides the structure needed to allow the datatype to recursive.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{34}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{38}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{42}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{instance}\codeskip \Conid{IFunctor}\codeskip \Conid{ParserF}\codeskip \mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip \anonymous \codeskip \Conid{EmptyF}{}\<[26]%
-\>[26]{}\mathrel{=}\Conid{EmptyF}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip \anonymous \codeskip (\Conid{PureF}\codeskip \Varid{x}){}\<[26]%
-\>[26]{}\mathrel{=}\Conid{PureF}\codeskip {}\<[38]%
-\>[38]{}\Varid{x}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip \anonymous \codeskip (\Conid{SatisfyF}\codeskip \Varid{c}){}\<[26]%
-\>[26]{}\mathrel{=}\Conid{SatisfyF}\codeskip {}\<[38]%
-\>[38]{}\Varid{c}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{TryF}\codeskip \Varid{px}){}\<[26]%
-\>[26]{}\mathrel{=}\Conid{TryF}\codeskip {}\<[34]%
-\>[34]{}(\Varid{f}\codeskip \Varid{px}){}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{ApF}\codeskip \Varid{pf}\codeskip \Varid{px}){}\<[26]%
-\>[26]{}\mathrel{=}\Conid{ApF}\codeskip {}\<[34]%
-\>[34]{}(\Varid{f}\codeskip \Varid{pf})\codeskip {}\<[42]%
-\>[42]{}(\Varid{f}\codeskip \Varid{px}){}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{OrF}\codeskip \Varid{px}\codeskip \Varid{py}){}\<[26]%
-\>[26]{}\mathrel{=}\Conid{OrF}\codeskip {}\<[34]%
-\>[34]{}(\Varid{f}\codeskip \Varid{px})\codeskip {}\<[42]%
-\>[42]{}(\Varid{f}\codeskip \Varid{py}){}\<[E]%
+\>[3]{}\mathbf{newtype}\codeskip \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}\mathrel{=}\Conid{In}\codeskip (\Varid{iF}\codeskip (\Conid{Fix}\codeskip \Varid{iF})\codeskip \Varid{a}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-
-\ensuremath{\Conid{Fix}} is used to get the fixed point of the functor.
-It contains the structure needed to allow the datatype to recursive.
 \ensuremath{\Conid{Parser}_{4}} is the fixed point of \ensuremath{\Conid{ParserF}}.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -679,14 +653,66 @@ It contains the structure needed to allow the datatype to recursive.
 \>[3]{}\mathbf{type}\codeskip \Conid{Parser}_{4}\codeskip \Varid{a}\mathrel{=}\Conid{Fix}\codeskip \Conid{ParserF}\codeskip \Varid{a}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+
 A mechanism is now required for folding this abstract datatype.
-This is possible through the use of a catamorphism, which is a generalised way of folding an abstract datatype.
-Therefore, the \ensuremath{\Varid{cata}} function can be used - a definition can be found in the appendix.
+This is possible through the use of a \textit{catamorphism}, which is a generalised way of folding an abstract datatype.
+The commutative diagram below describes how a \textit{catamorphism} can be defined.
+Firstly, a layer of \ensuremath{\Conid{Fix}} is peeled off by removing an \ensuremath{\Conid{In}} to give \ensuremath{\Varid{iF}\codeskip (\Conid{Fix}\codeskip \Varid{iF})\codeskip \Varid{a}}.
+Then a recursive call is made to fold the structure below in the AST.
+This results in a item of type \ensuremath{\Varid{iF}\codeskip \Varid{f}\codeskip \Varid{a}}.
+Finally, an algebra is applied to fold this layer of the datatype, resulting in a item of type \ensuremath{\Varid{f}\codeskip \Varid{a}}.
+
+\begin{figure}[h]
+\centering
+\begin{tikzcd}[column sep=huge]
+\ensuremath{\Varid{iF}\codeskip (\Conid{Fix}\codeskip \Varid{iF})\codeskip \Varid{a}}  \arrow[r, "\ensuremath{\Varid{imap}\codeskip (\Varid{cata}\codeskip \Varid{alg})}"] \arrow[d, shift left=0.15cm, "\ensuremath{\Conid{In}}"] & \ensuremath{\Varid{iF}\codeskip \Varid{f}\codeskip \Varid{a}} \arrow[d, "\ensuremath{\Varid{alg}}"]\\
+\ensuremath{\Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}}       \arrow[r, "\ensuremath{\Varid{cata}\codeskip \Varid{alg}}"]        \arrow[u, shift left=0.15cm, "\ensuremath{\Varid{inop}}"]        & \ensuremath{\Varid{f}\codeskip \Varid{a}}
+\end{tikzcd}
+\end{figure}
 
 
-Now all the building blocks have been defined that allow for the folding of the parser DSL.
-\ensuremath{\Varid{size}} can be defined as a fold, which is determined by the \ensuremath{\Varid{sizeAlg}}.
-Due to parsers being a typed language, a constant functor is required to preserve the type indicies.
+\ensuremath{\Varid{cata}} is able to fold a \ensuremath{\Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}} and produce an item of type \ensuremath{\Varid{f}\codeskip \Varid{a}}.
+It uses the algebra argument as a specification of how to fold the input datatype.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{cata}\mathbin{::}\Conid{IFunctor}\codeskip \Varid{iF}\Rightarrow (\forall \Varid{a}\hsforall \hsdot{\cdot }{.}\Varid{iF}\codeskip \Varid{f}\codeskip \Varid{a}\to \Varid{f}\codeskip \Varid{a})\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}\to \Varid{f}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{cata}\codeskip \Varid{alg}\codeskip (\Conid{In}\codeskip \Varid{x})\mathrel{=}\Varid{alg}\codeskip (\Varid{imap}\codeskip (\Varid{cata}\codeskip \Varid{alg})\codeskip \Varid{x}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Since the resulting type of \ensuremath{\Varid{cata}} for an \ensuremath{\Conid{IFunctor}} is \ensuremath{\Varid{f}\codeskip \Varid{a}}, this requires the output to be a \ensuremath{\Conid{Functor}}.
+One example of this could be \ensuremath{\Conid{Fix}\codeskip \Conid{ParserF}}.
+However, in the case that the datatype would like to be folded into something that is not a functor,
+or has kind \ensuremath{\mathbin{*}}, then additional infrastructure is needed.
+There are two methods to allow this to take place.
+A new type could be defined for each output type that has a phantom type parameter. For example:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{newtype}\codeskip \Conid{Size}'\codeskip \Varid{i}\mathrel{=}\Conid{Size}'\codeskip \{\mskip1.5mu \Varid{unSize}\mathbin{::}\Conid{Size}\mskip1.5mu\}\codeskip \mathbf{deriving}\codeskip \Conid{Num}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+However, this could lead to lots of new type definitions.
+To avoid this the constant functor can be used.
+It allows a type with kind \ensuremath{\mathbin{*}} to have kind \ensuremath{\mathbin{*}\to \mathbin{*}}, in a similar way to how the \ensuremath{\Varid{const}} function works.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{newtype}\codeskip \Conid{C}\codeskip \Varid{a}\codeskip \Varid{k}\mathrel{=}\Conid{C}\codeskip \{\mskip1.5mu \Varid{unConst}\mathbin{::}\Varid{a}\mskip1.5mu\}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Now, all the building blocks have been defined that allow for the folding of the parser DSL.
+\ensuremath{\Varid{size}} can be redefined as a fold, that is determined by the \ensuremath{\Varid{sizeAlg}}.
+Due to parsers being a typed language, a constant functor is required to preserve the type indices.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -694,11 +720,9 @@ Due to parsers being a typed language, a constant functor is required to preserv
 \column{22}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{26}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{type}\codeskip \Conid{ParserAlg}\codeskip \Varid{a}\codeskip \Varid{i}\mathrel{=}\Conid{ParserF}\codeskip \Varid{a}\codeskip \Varid{i}\to \Varid{a}\codeskip \Varid{i}{}\<[E]%
+\>[3]{}\mathbf{type}\codeskip \Conid{ParserAlg}\codeskip \Varid{f}\codeskip \Varid{a}\mathrel{=}\Conid{ParserF}\codeskip \Varid{f}\codeskip \Varid{a}\to \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\mathbf{newtype}\codeskip \Conid{C}\codeskip \Varid{a}\codeskip \Varid{i}\mathrel{=}\Conid{C}\codeskip \{\mskip1.5mu \Varid{unConst}\mathbin{::}\Varid{a}\mskip1.5mu\}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{sizeAlg}\mathbin{::}\Conid{ParserAlg}\codeskip (\Conid{C}\codeskip \Conid{Size})\codeskip \Varid{i}{}\<[E]%
+\>[3]{}\Varid{sizeAlg}\mathbin{::}\Conid{ParserAlg}\codeskip (\Conid{C}\codeskip \Conid{Size})\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{sizeAlg}\codeskip \Conid{EmptyF}{}\<[26]%
 \>[26]{}\mathrel{=}\Conid{C}\codeskip \mathrm{1}{}\<[E]%
@@ -712,11 +736,11 @@ Due to parsers being a typed language, a constant functor is required to preserv
 \>[26]{}\mathrel{=}\Conid{C}\codeskip \mathrm{1}{}\<[E]%
 \\
 \>[3]{}\Varid{sizeAlg}\codeskip (\Conid{TryF}\codeskip (\Conid{C}\codeskip \Varid{n})){}\<[26]%
-\>[26]{}\mathrel{=}\Conid{C}\mathbin{\$}\Varid{n}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[26]{}\mathrel{=}\Conid{C}\codeskip (\Varid{n}\mathbin{+}\mathrm{1}){}\<[E]%
 \\
-\>[3]{}\Varid{sizeAlg}\codeskip (\Conid{ApF}\codeskip (\Conid{C}\codeskip \Varid{pf})\codeskip (\Conid{C}\codeskip \Varid{px}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{pf}\mathbin{+}\Varid{px}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{sizeAlg}\codeskip (\Conid{ApF}\codeskip (\Conid{C}\codeskip \Varid{pf})\codeskip (\Conid{C}\codeskip \Varid{px}))\mathrel{=}\Conid{C}\codeskip (\Varid{pf}\mathbin{+}\Varid{px}\mathbin{+}\mathrm{1}){}\<[E]%
 \\
-\>[3]{}\Varid{sizeAlg}\codeskip (\Conid{OrF}\codeskip (\Conid{C}\codeskip \Varid{px})\codeskip (\Conid{C}\codeskip \Varid{py}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{px}\mathbin{+}\Varid{py}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{sizeAlg}\codeskip (\Conid{OrF}\codeskip (\Conid{C}\codeskip \Varid{px})\codeskip (\Conid{C}\codeskip \Varid{py}))\mathrel{=}\Conid{C}\codeskip (\Varid{px}\mathbin{+}\Varid{py}\mathbin{+}\mathrm{1}){}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\Varid{size}_{4}\mathbin{::}\Conid{Parser}_{4}\codeskip \Varid{a}\to \Conid{Size}{}\<[E]%
 \\
@@ -728,16 +752,17 @@ Due to parsers being a typed language, a constant functor is required to preserv
 
 In DSLs it is common to want to evaluate multiple interpretations.
 For example, a parser may also want to know the maximum number of characters it will read (maximum munch).
-In a deep embedding this is simple, a second algebra can be defined.
+In a deep embedding, this is simple: a second algebra can be defined.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\mathbf{type}\codeskip \Conid{MM}\mathrel{=}\Conid{Int}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\Varid{mmAlg}\mathbin{::}\Conid{ParserAlg}\codeskip (\Conid{C}\codeskip \Conid{MM})\codeskip \Varid{i}{}\<[E]%
+\>[3]{}\Varid{mmAlg}\mathbin{::}\Conid{ParserAlg}\codeskip (\Conid{C}\codeskip \Conid{MM})\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{mmAlg}\codeskip \Conid{EmptyF}{}\<[24]%
 \>[24]{}\mathrel{=}\Conid{C}\codeskip \mathrm{0}{}\<[E]%
@@ -751,15 +776,18 @@ In a deep embedding this is simple, a second algebra can be defined.
 \>[3]{}\Varid{mmAlg}\codeskip (\Conid{TryF}\codeskip (\Conid{C}\codeskip \Varid{px})){}\<[24]%
 \>[24]{}\mathrel{=}\Conid{C}\codeskip \Varid{px}{}\<[E]%
 \\
-\>[3]{}\Varid{mmAlg}\codeskip (\Conid{ApF}\codeskip (\Conid{C}\codeskip \Varid{pf})\codeskip (\Conid{C}\codeskip \Varid{px}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{pf}\mathbin{+}\Varid{px}{}\<[E]%
+\>[3]{}\Varid{mmAlg}\codeskip (\Conid{ApF}\codeskip (\Conid{C}\codeskip \Varid{pf})\codeskip (\Conid{C}\codeskip \Varid{px})){}\<[30]%
+\>[30]{}\mathrel{=}\Conid{C}\codeskip (\Varid{pf}\mathbin{+}\Varid{px}){}\<[E]%
 \\
-\>[3]{}\Varid{mmAlg}\codeskip (\Conid{OrF}\codeskip (\Conid{C}\codeskip \Varid{px})\codeskip (\Conid{C}\codeskip \Varid{py}))\mathrel{=}\Conid{C}\mathbin{\$}\Varid{max}\codeskip \Varid{px}\codeskip \Varid{py}{}\<[E]%
+\>[3]{}\Varid{mmAlg}\codeskip (\Conid{OrF}\codeskip (\Conid{C}\codeskip \Varid{px})\codeskip (\Conid{C}\codeskip \Varid{py})){}\<[30]%
+\>[30]{}\mathrel{=}\Conid{C}\codeskip (\Varid{max}\codeskip \Varid{px}\codeskip \Varid{py}){}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\Varid{maxMunch}_{4}\mathbin{::}\Conid{Parser}_{4}\codeskip \Varid{a}\to \Conid{MM}{}\<[E]%
 \\
 \>[3]{}\Varid{maxMunch}_{4}\mathrel{=}\Varid{unConst}\hsdot{\cdot }{.}\Varid{cata}\codeskip \Varid{mmAlg}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+
 However, in a shallow embedding it is not as easy.
 To be able to evaluate both semantics a pair can be used, with both interpretations being evaluated simultaneously.
 If many semantics are required this can become cumbersome to define.
@@ -814,7 +842,9 @@ If many semantics are required this can become cumbersome to define.
 \ColumnHook
 \end{hscode}\resethooks
 
-Although this is an algebra, you are able to learn the shallow embedding from this, for example:
+It is possible to take an alegbra and convert it into a shallow embedding.
+This is possible by setting the shallow embedding equal to the result of the algebra,
+with the corresponding constructor from the deep embedding, for example:
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -830,78 +860,105 @@ Although this is an algebra, you are able to learn the shallow embedding from th
 
 In a more complex parser combinator library that perform optimisations on a deep embedding,
 it could also be possible that there is a primary fold that depends on other secondary folds on parts of the AST.
-Folds such as this are named zygomorphisms~\cite{Fokkinga1989TuplingAM} - a special case of a mutomorphism -
+Folds such as this are named \textit{zygomorphisms}~\cite{Fokkinga1989TuplingAM} - a special case of a \textit{mutomorphism} -
 they can be implemented by tupling the functions in the fold.
-\citet{parsley} makes use of a zygomorphism to perform consumption analysis.
+\citet{parsley} makes use of a \textit{zygomorphism} to perform consumption analysis.
 
 
 \subsection{Context-sensitive Interpretations}
 
-
 Parsers themselves inherently require context sensitive interpretations - what can be parsed will
 depend on what has previously been parsed.
 
-Using the semantics from~\citet{wuYoda}, an implementation can be given for a simple parser using an accumulating fold.
+A parser can be implemented with an accumulating fold.
+An accumulating fold forms series of nested functions, that collapse to give a final value once the base case has been applied.
+A simple example of an accumulating fold could be, implementing \ensuremath{\Varid{foldl}} in terms of \ensuremath{\Varid{foldr}}.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{newtype}\codeskip \Conid{Y}\codeskip \Varid{a}\mathrel{=}\Conid{Y}\codeskip \{\mskip1.5mu \Varid{unYoda}\mathbin{::}\Conid{String}\to [\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]\mskip1.5mu\}{}\<[E]%
+\>[3]{}\Varid{foldl}\mathbin{::}(\Varid{b}\to \Varid{a}\to \Varid{b})\to \Varid{b}\to [\mskip1.5mu \Varid{a}\mskip1.5mu]\to \Varid{b}{}\<[E]%
+\\
+\>[3]{}\Varid{foldl}\codeskip \Varid{f}\codeskip \Varid{b}\codeskip \Varid{as}\mathrel{=}\Varid{foldr}\codeskip (\lambda \Varid{a}\codeskip \Varid{g}\codeskip \Varid{x}\to \Varid{g}\codeskip (\Varid{f}\codeskip \Varid{x}\codeskip \Varid{a}))\codeskip \Varid{id}\codeskip \Varid{as}\codeskip \Varid{b}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+A simple example of \ensuremath{\Varid{foldl}} can be considered.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{BE}{@{}l@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[5]{}\Varid{foldl}\codeskip (\mathbin{+})\codeskip \mathrm{0}\codeskip [\mskip1.5mu \mathrm{1},\mathrm{2}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\equiv {}\<[BE]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}(\lambda \Varid{x}\to (\lambda \Varid{x}\to \Varid{id}\codeskip (\Varid{x}\mathbin{+}\mathrm{2}))\codeskip (\Varid{x}\mathbin{+}\mathrm{1}))\codeskip \mathrm{0}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Yoda~\cite{wuYoda} is a simple non-deterministic parser combinator library.
+The combinators are used to produce a function of type \ensuremath{\Varid{parser}\mathbin{::}\Conid{String}\to [\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]}.
+Similarities can be drawn from the previous example, the combinators form the first part of the example where a function is constructed of lambdas.
+The base case \ensuremath{\mathrm{0}} of the fold is then passed into the constructed function, this similar to how a string is passed into the parsing function.
+The accumulating fold for Yoda, is implemented by \ensuremath{\Varid{yAlg}}.
+
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{19}{@{}>{\hspre}c<{\hspost}@{}}%
-\column{19E}{@{}l@{}}%
-\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{23}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{32}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{39}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{yAlg}\mathbin{::}\Conid{ParserAlg}\codeskip \Conid{Y}\codeskip \Varid{i}{}\<[E]%
-\\
-\>[3]{}\Varid{yAlg}\codeskip \Conid{EmptyF}{}\<[21]%
-\>[21]{}\mathrel{=}\Conid{Y}\mathbin{\$}\Varid{const}\codeskip [\mskip1.5mu \mskip1.5mu]{}\<[E]%
-\\
-\>[3]{}\Varid{yAlg}\codeskip (\Conid{PureF}\codeskip \Varid{x}){}\<[22]%
-\>[22]{}\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \Varid{ts}\to [\mskip1.5mu (\Varid{x},\Varid{ts})\mskip1.5mu]{}\<[E]%
-\\
-\>[3]{}\Varid{yAlg}\codeskip (\Conid{SatisfyF}\codeskip \Varid{c}){}\<[22]%
-\>[22]{}\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \mathbf{case}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}[\mskip1.5mu \mskip1.5mu]{}\<[14]%
-\>[14]{}\to [\mskip1.5mu \mskip1.5mu]{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}(\Varid{t}\mathbin{:}\Varid{ts}'){}\<[14]%
-\>[14]{}\to [\mskip1.5mu (\Varid{t},\Varid{ts}')\mid \Varid{c}\codeskip \Varid{t}\mskip1.5mu]{}\<[E]%
-\\
-\>[3]{}\Varid{yAlg}\codeskip (\Conid{TryF}\codeskip \Varid{px}){}\<[22]%
-\>[22]{}\mathrel{=}\Varid{px}{}\<[E]%
-\\
-\>[3]{}\Varid{yAlg}\codeskip (\Conid{ApF}\codeskip (\Conid{Y}\codeskip \Varid{pf})\codeskip (\Conid{Y}\codeskip \Varid{px}))\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \Varid{ts}\to {}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}[\mskip1.5mu (\Varid{f}\codeskip \Varid{x},\Varid{ts}''){}\<[19]%
-\>[19]{}\mid {}\<[19E]%
-\>[23]{}(\Varid{f},{}\<[28]%
-\>[28]{}\Varid{ts}'){}\<[35]%
-\>[35]{}\leftarrow \Varid{pf}\codeskip \Varid{ts}{}\<[E]%
-\\
-\>[19]{},{}\<[19E]%
-\>[23]{}(\Varid{x},{}\<[28]%
-\>[28]{}\Varid{ts}''){}\<[35]%
-\>[35]{}\leftarrow \Varid{px}\codeskip \Varid{ts}'\mskip1.5mu]{}\<[E]%
-\\
-\>[3]{}\Varid{yAlg}\codeskip (\Conid{OrF}\codeskip (\Conid{Y}\codeskip \Varid{px})\codeskip (\Conid{Y}\codeskip \Varid{py}))\mathrel{=}\Conid{Y}\mathbin{\$}\lambda \Varid{ts}\to \Varid{px}\codeskip \Varid{ts}\plus \Varid{py}\codeskip \Varid{ts}{}\<[E]%
+\>[3]{}\mathbf{newtype}\codeskip \Conid{Y}\codeskip \Varid{a}\mathrel{=}\Conid{Y}\codeskip \{\mskip1.5mu \Varid{unYoda}\mathbin{::}\Conid{String}\to [\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]\mskip1.5mu\}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\Varid{parse}\mathbin{::}\Conid{Parser}_{4}\codeskip \Varid{a}\to (\Conid{String}\to [\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]){}\<[E]%
+\>[3]{}\Varid{yAlg}\mathbin{::}\Conid{ParserAlg}\codeskip \Conid{Y}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\codeskip {}\<[9]%
+\>[9]{}\Conid{EmptyF}{}\<[23]%
+\>[23]{}\mathrel{=}\Conid{Y}\codeskip (\Varid{const}\codeskip [\mskip1.5mu \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\codeskip {}\<[9]%
+\>[9]{}(\Conid{PureF}\codeskip \Varid{x}){}\<[23]%
+\>[23]{}\mathrel{=}\Conid{Y}\codeskip (\lambda \Varid{ts}\to [\mskip1.5mu (\Varid{x},\Varid{ts})\mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\codeskip {}\<[9]%
+\>[9]{}(\Conid{SatisfyF}\codeskip \Varid{c}){}\<[23]%
+\>[23]{}\mathrel{=}\Conid{Y}\codeskip (\lambda \mathbf{case}{}\<[E]%
+\\
+\>[9]{}[\mskip1.5mu \mskip1.5mu]{}\<[18]%
+\>[18]{}\to [\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[9]{}(\Varid{t}\mathbin{:}\Varid{ts}'){}\<[18]%
+\>[18]{}\to [\mskip1.5mu (\Varid{t},\Varid{ts}')\mid \Varid{c}\codeskip \Varid{t}\mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\codeskip {}\<[9]%
+\>[9]{}(\Conid{TryF}\codeskip \Varid{px}){}\<[23]%
+\>[23]{}\mathrel{=}\Varid{px}{}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\codeskip {}\<[9]%
+\>[9]{}(\Conid{ApF}\codeskip (\Conid{Y}\codeskip \Varid{pf})\codeskip (\Conid{Y}\codeskip \Varid{px}))\mathrel{=}\Conid{Y}\codeskip (\lambda \Varid{ts}\to {}\<[E]%
+\\
+\>[9]{}[\mskip1.5mu (\Varid{f}\codeskip \Varid{x},\Varid{ts}''){}\<[23]%
+\>[23]{}\mid {}\<[27]%
+\>[27]{}(\Varid{f},{}\<[32]%
+\>[32]{}\Varid{ts}'){}\<[39]%
+\>[39]{}\leftarrow \Varid{pf}\codeskip \Varid{ts}{}\<[E]%
+\\
+\>[23]{},{}\<[27]%
+\>[27]{}(\Varid{x},{}\<[32]%
+\>[32]{}\Varid{ts}''){}\<[39]%
+\>[39]{}\leftarrow \Varid{px}\codeskip \Varid{ts}'\mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\Varid{yAlg}\codeskip {}\<[9]%
+\>[9]{}(\Conid{OrF}\codeskip (\Conid{Y}\codeskip \Varid{px})\codeskip (\Conid{Y}\codeskip \Varid{py}))\mathrel{=}\Conid{Y}\codeskip (\lambda \Varid{ts}\to \Varid{px}\codeskip \Varid{ts}\plus \Varid{py}\codeskip \Varid{ts}){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{parse}\mathbin{::}\Conid{Parser}_{4}\codeskip \Varid{a}\to \Conid{String}\to [\mskip1.5mu (\Varid{a},\Conid{String})\mskip1.5mu]{}\<[E]%
 \\
 \>[3]{}\Varid{parse}\mathrel{=}\Varid{unYoda}\hsdot{\cdot }{.}\Varid{cata}\codeskip \Varid{yAlg}{}\<[E]%
 \ColumnHook
@@ -913,47 +970,43 @@ Using the semantics from~\citet{wuYoda}, an implementation can be given for a si
 Previously, when defining multiple interpretations in a shallow embedding, a tuple was used.
 However, this does not extend well when many interpretations are needed.
 Large tuples tend to lack good language support and will become messy to work with.
-It would be beneficial if a shallow embedding could have a parameter that gives it the interpretation.
+It would be beneficial if a shallow embedding could be parameterised to take an interpretation in the form of an algebra.
 
 \ensuremath{\Conid{Parser}_{7}} allows for this approach,
 the shallow embedding is made up of first class functions that require an algebra argument.
 This algebra describes how the shallow embedding should fold the structure.
-
+The full definitions can be found in Appendix~\ref{app:parser7-constructors}.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{newtype}\codeskip \Conid{Parser}_{7}\codeskip \Varid{i}\mathrel{=}\Conid{P}_{7}{}\<[E]%
+\>[3]{}\mathbf{newtype}\codeskip \Conid{Parser}_{7}\codeskip \Varid{a}\mathrel{=}\Conid{P}_{7}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\{\mskip1.5mu \Varid{unP}_{7}\mathbin{::}\forall \Varid{a}\hsforall \hsdot{\cdot }{.}(\forall \Varid{j}\hsforall \hsdot{\cdot }{.}\Conid{ParserF}\codeskip \Varid{a}\codeskip \Varid{j}\to \Varid{a}\codeskip \Varid{j})\to \Varid{a}\codeskip \Varid{i}\mskip1.5mu\}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{empty}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{empty}_{7}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip \Conid{EmptyF}){}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{pure}_{7}\mathbin{::}\Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{pure}_{7}\codeskip \Varid{x}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{PureF}\codeskip \Varid{x})){}\<[E]%
+\>[5]{}\{\mskip1.5mu \Varid{unP}_{7}\mathbin{::}\forall \Varid{f}\hsforall \hsdot{\cdot }{.}(\forall \Varid{a}\hsforall \hsdot{\cdot }{.}\Conid{ParserAlg}\codeskip \Varid{f}\codeskip \Varid{a})\to \Varid{f}\codeskip \Varid{a}\mskip1.5mu\}{}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\Varid{satisfy}_{7}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{Parser}_{7}\codeskip \Conid{Char}{}\<[E]%
 \\
 \>[3]{}\Varid{satisfy}_{7}\codeskip \Varid{c}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{SatisfyF}\codeskip \Varid{c})){}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{try}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip \Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{try}_{7}\codeskip \Varid{px}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{TryF}\codeskip (\Varid{unP}_{7}\codeskip \Varid{px}\codeskip \Varid{h}))){}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{ap}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip (\Varid{a}\to \Varid{b})\to \Conid{Parser}_{7}\codeskip \Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{b}{}\<[E]%
-\\
-\>[3]{}\Varid{ap}_{7}\codeskip \Varid{pf}\codeskip \Varid{px}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{ApF}\codeskip (\Varid{unP}_{7}\codeskip \Varid{pf}\codeskip \Varid{h})\codeskip (\Varid{unP}_{7}\codeskip \Varid{px}\codeskip \Varid{h}))){}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\Varid{or}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip \Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{or}_{7}\codeskip \Varid{px}\codeskip \Varid{py}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{OrF}\codeskip (\Varid{unP}_{7}\codeskip \Varid{px}\codeskip \Varid{h})\codeskip (\Varid{unP}_{7}\codeskip \Varid{py}\codeskip \Varid{h}))){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+
+Then, for example, to find the size of a parser:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{size}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip \Varid{a}\to \Conid{Size}{}\<[E]%
+\\
+\>[3]{}\Varid{size}_{7}\codeskip \Varid{p}\mathrel{=}\Varid{unConst}\codeskip (\Varid{unP}_{7}\codeskip \Varid{p}\codeskip \Varid{sizeAlg}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
 One benefit of this approach is that it allows the shallow embedding to be converted to a deep embedding.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -966,41 +1019,24 @@ One benefit of this approach is that it allows the shallow embedding to be conve
 \end{hscode}\resethooks
 
 Simillarly it is possible to convert a deep embedding into a parameterised shallow embedding.
+Where \ensuremath{\Varid{shallowAlg}} is setting each constructor to the corresponding shallow function - this can be seen in Appendix~\ref{app:shallowalg}.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\Varid{shallow}\mathbin{::}\Conid{Parser}_{4}\codeskip \Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{shallow}\mathrel{=}\Varid{cata}\codeskip \Varid{shallowAlg}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{shallowAlg}\mathbin{::}\Conid{ParserAlg}\codeskip \Conid{Parser}_{7}\codeskip \Varid{i}{}\<[E]%
-\\
-\>[3]{}\Varid{shallowAlg}\codeskip \Conid{EmptyF}{}\<[28]%
-\>[28]{}\mathrel{=}\Varid{empty}_{7}{}\<[E]%
-\\
-\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{PureF}\codeskip \Varid{x}){}\<[28]%
-\>[28]{}\mathrel{=}\Varid{pure}_{7}\codeskip \Varid{x}{}\<[E]%
-\\
-\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{SatisfyF}\codeskip \Varid{c}){}\<[28]%
-\>[28]{}\mathrel{=}\Varid{satisfy}_{7}\codeskip \Varid{c}{}\<[E]%
-\\
-\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{TryF}\codeskip \Varid{px}){}\<[28]%
-\>[28]{}\mathrel{=}\Varid{try}_{7}\codeskip \Varid{px}{}\<[E]%
-\\
-\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{ApF}\codeskip \Varid{pf}\codeskip \Varid{px}){}\<[28]%
-\>[28]{}\mathrel{=}\Varid{ap}_{7}\codeskip \Varid{pf}\codeskip \Varid{px}{}\<[E]%
-\\
-\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{OrF}\codeskip \Varid{px}\codeskip \Varid{py}){}\<[28]%
-\>[28]{}\mathrel{=}\Varid{or}_{7}\codeskip \Varid{px}\codeskip \Varid{py}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+
+
+
 Being able to convert between both types of embedding,
 demonstrates that deep and parameterised shallow embeddings are inverses of each other.
 
 
-\subsection{Implicitly Parameterised Interpretations}
+\subsection{Implicitly Parameterized Interpretations}
 
 The previous parameterised implementation still required the algebra to be specified.
 It would be helpful if it could be passed implicitly, if it can be determined from the type of the interpretation.
@@ -1048,45 +1084,46 @@ This is possible in Haskell through the use of a type class.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{newtype}\codeskip \Conid{Size}_{8}\codeskip \Varid{i}\mathrel{=}\Conid{Size}\codeskip \{\mskip1.5mu \Varid{unSize}\mathbin{::}\Conid{Int}\mskip1.5mu\}\codeskip \mathbf{deriving}\codeskip \Conid{Num}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{37}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{50}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{instance}\codeskip \Conid{Parser}_{8}\codeskip \Conid{Size}_{8}\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{instance}\codeskip \Conid{Parser}_{8}\codeskip \Conid{Size}'\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{empty}_{8}{}\<[17]%
-\>[17]{}\mathrel{=}\mathrm{1}{}\<[E]%
+\>[17]{}\mathrel{=}\Conid{Size}'\codeskip \mathrm{1}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{pure}_{8}\codeskip \anonymous {}\<[17]%
-\>[17]{}\mathrel{=}\mathrm{1}{}\<[E]%
+\>[17]{}\mathrel{=}\Conid{Size}'\codeskip \mathrm{1}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{satisfy}_{8}\codeskip \anonymous {}\<[17]%
-\>[17]{}\mathrel{=}\mathrm{1}{}\<[E]%
+\>[17]{}\mathrel{=}\Conid{Size}'\codeskip \mathrm{1}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{try}_{8}\codeskip \Varid{px}{}\<[17]%
-\>[17]{}\mathrel{=}\Varid{px}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[17]{}\mathrel{=}\Conid{Size}'\codeskip (\Varid{unSize}\codeskip \Varid{px}{}\<[37]%
+\>[37]{}\mathbin{+}\mathrm{1}){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{ap}_{8}\codeskip \Varid{pf}\codeskip \Varid{px}{}\<[17]%
-\>[17]{}\mathrel{=}\Varid{coerce}\codeskip \Varid{pf}\mathbin{+}\Varid{coerce}\codeskip \Varid{px}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[17]{}\mathrel{=}\Conid{Size}'\codeskip (\Varid{unSize}\codeskip \Varid{pf}{}\<[37]%
+\>[37]{}\mathbin{+}\Varid{unSize}\codeskip \Varid{px}{}\<[50]%
+\>[50]{}\mathbin{+}\mathrm{1}){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{or}_{8}\codeskip \Varid{px}\codeskip \Varid{py}{}\<[17]%
-\>[17]{}\mathrel{=}\Varid{px}\mathbin{+}\Varid{py}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[17]{}\mathrel{=}\Conid{Size}'\codeskip (\Varid{unSize}\codeskip \Varid{px}{}\<[37]%
+\>[37]{}\mathbin{+}\Varid{unSize}\codeskip \Varid{py}{}\<[50]%
+\>[50]{}\mathbin{+}\mathrm{1}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-\ensuremath{\Varid{coerce}} allows for conversion between types that have the same runtime representation.
-This is the case for \ensuremath{\Conid{Size}_{8}} and \ensuremath{\Conid{Int}}.
+%|coerce| allows for conversion between types that have the same runtime representation.
+%This is the case for |Size8| and |Int|.
+
 To be able to reuse the previously defined algebras, a different type class can be defined.
 
 \begin{hscode}\SaveRestoreHook
@@ -1097,12 +1134,12 @@ To be able to reuse the previously defined algebras, a different type class can 
 \>[3]{}\mathbf{class}\codeskip \Conid{Parser}_{9}\codeskip \Varid{parser}\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{alg}\mathbin{::}\Conid{ParserAlg}\codeskip \Varid{parser}\codeskip \Varid{i}{}\<[E]%
+\>[5]{}\Varid{alg}\mathbin{::}\Conid{ParserAlg}\codeskip \Varid{parser}\codeskip \Varid{a}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\mathbf{instance}\codeskip \Conid{Parser}_{9}\codeskip \Conid{Size}_{8}\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{instance}\codeskip \Conid{Parser}_{9}\codeskip \Conid{Size}'\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{alg}\mathrel{=}\Varid{coerce}\hsdot{\cdot }{.}\Varid{sizeAlg}\hsdot{\cdot }{.}\Varid{imap}\codeskip \Varid{coerce}{}\<[E]%
+\>[5]{}\Varid{alg}\mathrel{=}\Conid{Size}'\hsdot{\cdot }{.}\Varid{unConst}\hsdot{\cdot }{.}\Varid{sizeAlg}\hsdot{\cdot }{.}\Varid{imap}\codeskip (\Conid{C}\hsdot{\cdot }{.}\Varid{unSize}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
@@ -1111,8 +1148,9 @@ To be able to reuse the previously defined algebras, a different type class can 
 \subsection{Modular Interpretations}
 
 
-There may be times when adding extra combinators would be convenient, for example adding a 'string' operator.
-A modular technique to assembling DSLs would aid this process.
+There may be times when adding extra combinators would be convenient.
+For example, adding a `string' operator.
+A modular technique for assembling DSLs would aid this process.
 This approach is described in Data types à la carte~\cite{datatypesalacarte}.
 An \ensuremath{:\!\!+\!\!:} operator can be defined to specify a choice between constructors.
 \begin{hscode}\SaveRestoreHook
@@ -1121,68 +1159,63 @@ An \ensuremath{:\!\!+\!\!:} operator can be defined to specify a choice between 
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{11}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{32}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{data}\codeskip (\Varid{f}:\!\!+\!\!:\Varid{g})\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{data}\codeskip (\Varid{iF}:\!\!+\!\!:\Varid{iG})\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{L}\mathbin{::}\Varid{f}\codeskip \Varid{k}\codeskip \Varid{a}\to (\Varid{f}:\!\!+\!\!:\Varid{g})\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[5]{}\Conid{L}\mathbin{::}\Varid{iF}\codeskip \Varid{f}\codeskip \Varid{a}\to (\Varid{iF}:\!\!+\!\!:\Varid{iG})\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{R}\mathbin{::}\Varid{g}\codeskip \Varid{k}\codeskip \Varid{a}\to (\Varid{f}:\!\!+\!\!:\Varid{g})\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[5]{}\Conid{R}\mathbin{::}\Varid{iG}\codeskip \Varid{f}\codeskip \Varid{a}\to (\Varid{iF}:\!\!+\!\!:\Varid{iG})\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\mathbf{infixr}:\!\!+\!\!:{}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\mathbf{instance}\codeskip {}\<[13]%
-\>[13]{}(\Conid{IFunctor}\codeskip \Varid{f},\Conid{IFunctor}\codeskip \Varid{g}){}\<[E]%
+\>[13]{}(\Conid{IFunctor}\codeskip \Varid{iF},\Conid{IFunctor}\codeskip \Varid{iG}){}\<[E]%
 \\
-\>[13]{}\Rightarrow \Conid{IFunctor}\codeskip (\Varid{f}:\!\!+\!\!:\Varid{g})\codeskip \mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip {}\<[11]%
-\>[11]{}\Varid{f}\codeskip (\Conid{L}\codeskip \Varid{x})\mathrel{=}\Conid{L}\codeskip (\Varid{imap}\codeskip \Varid{f}\codeskip \Varid{x}){}\<[E]%
+\>[13]{}\Rightarrow \Conid{IFunctor}\codeskip (\Varid{iF}:\!\!+\!\!:\Varid{iG})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{imap}\codeskip {}\<[11]%
-\>[11]{}\Varid{f}\codeskip (\Conid{R}\codeskip \Varid{y})\mathrel{=}\Conid{R}\codeskip (\Varid{imap}\codeskip \Varid{f}\codeskip \Varid{y}){}\<[E]%
+\>[11]{}\Varid{f}\codeskip (\Conid{L}\codeskip \Varid{x}){}\<[20]%
+\>[20]{}\mathrel{=}\Conid{L}\codeskip {}\<[25]%
+\>[25]{}(\Varid{imap}\codeskip {}\<[32]%
+\>[32]{}\Varid{f}\codeskip {}\<[35]%
+\>[35]{}\Varid{x}){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\codeskip {}\<[11]%
+\>[11]{}\Varid{f}\codeskip (\Conid{R}\codeskip \Varid{y}){}\<[20]%
+\>[20]{}\mathrel{=}\Conid{R}\codeskip {}\<[25]%
+\>[25]{}(\Varid{imap}\codeskip {}\<[32]%
+\>[32]{}\Varid{f}\codeskip {}\<[35]%
+\>[35]{}\Varid{y}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Now the datatypes can be defined for each constructor that is required. The \ensuremath{\Conid{IFunctor}} instances for each constructor can be found in the appendix.
+
+For each constructor that is required the datatype and \ensuremath{\Conid{IFunctor}} instance can be defined.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{data}\codeskip \Conid{Empty}_{10}\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{data}\codeskip \Conid{Ap}_{10}\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Empty}_{10}\mathbin{::}\Conid{Empty}_{10}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[5]{}\Conid{Ap}_{10}\mathbin{::}\Varid{f}\codeskip (\Varid{a}\to \Varid{b})\to \Varid{f}\codeskip \Varid{a}\to \Conid{Ap}_{10}\codeskip \Varid{f}\codeskip \Varid{b}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\mathbf{data}\codeskip \Conid{Pure}_{10}\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{instance}\codeskip \Conid{IFunctor}\codeskip \Conid{Ap}_{10}\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Pure}_{10}\mathbin{::}\Varid{a}\to \Conid{Pure}_{10}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\mathbf{data}\codeskip \Conid{Satisfy}_{10}\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Satisfy}_{10}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{Satisfy}_{10}\codeskip \Varid{k}\codeskip \Conid{Char}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\mathbf{data}\codeskip \Conid{Try}_{10}\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Try}_{10}\mathbin{::}\Varid{k}\codeskip \Varid{a}\to \Conid{Try}_{10}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\mathbf{data}\codeskip \Conid{Ap}_{10}\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Ap}_{10}\mathbin{::}\Varid{k}\codeskip (\Varid{a}\to \Varid{b})\to \Varid{k}\codeskip \Varid{a}\to \Conid{Ap}_{10}\codeskip \Varid{k}\codeskip \Varid{b}{}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\mathbf{data}\codeskip \Conid{Or}_{10}\codeskip (\Varid{k}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Conid{Or}_{10}\mathbin{::}\Varid{k}\codeskip \Varid{a}\to \Varid{k}\codeskip \Varid{a}\to \Conid{Or}_{10}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{Ap}_{10}\codeskip \Varid{pf}\codeskip \Varid{px})\mathrel{=}\Conid{Ap}_{10}\codeskip (\Varid{f}\codeskip \Varid{pf})\codeskip (\Varid{f}\codeskip \Varid{px}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+All datatypes and instances can be found in Appendix~\ref{app:modular-dtypes-ifunctors}
+
 The datatypes are now summed together to form a single \ensuremath{\Conid{ParserF}_{10}} type.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -1215,7 +1248,8 @@ The datatypes are now summed together to form a single \ensuremath{\Conid{Parser
 \>[3]{}\mathbf{type}\codeskip \Conid{Parser}_{10}\mathrel{=}\Conid{Fix}\codeskip \Conid{ParserF}_{10}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-There is however, one problem with this approach: there is now a mess of \ensuremath{\Conid{L}} and \ensuremath{\Conid{R}}'s. This makes this approach inconvenient to use.
+There is however, one problem with this approach: there is now a mess of \ensuremath{\Conid{L}} and \ensuremath{\Conid{R}}'s.
+This makes this approach inconvenient to use.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -1240,36 +1274,43 @@ The notion of subtypes between functors, can be specified using the \ensuremath{
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{class}\codeskip (\Conid{IFunctor}\codeskip \Varid{f},\Conid{IFunctor}\codeskip \Varid{g})\Rightarrow \Varid{f}:\prec:\Varid{g}\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{class}\codeskip (\Conid{IFunctor}\codeskip \Varid{iF},\Conid{IFunctor}\codeskip \Varid{iG})\Rightarrow \Varid{iF}:\prec:\Varid{iG}\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{inj}\mathbin{::}\Varid{f}\codeskip \Varid{k}\codeskip \Varid{a}\to \Varid{g}\codeskip \Varid{k}\codeskip \Varid{a}{}\<[E]%
+\>[5]{}\Varid{inj}\mathbin{::}\Varid{iF}\codeskip \Varid{f}\codeskip \Varid{a}\to \Varid{iG}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\mathbf{instance}\codeskip \Conid{IFunctor}\codeskip \Varid{f}\Rightarrow \Varid{f}:\prec:\Varid{f}\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{instance}\codeskip \Conid{IFunctor}\codeskip \Varid{iF}\Rightarrow \Varid{iF}:\prec:\Varid{iF}\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{inj}\mathrel{=}\Varid{id}{}\<[E]%
-\\[\blanklineskip]%
+\ColumnHook
+\end{hscode}\resethooks
+\newpage
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\mathbf{instance}\codeskip {}\<[13]%
 \>[13]{}\mbox{\enskip\{-\# OVERLAPPING  \#-\}\enskip}{}\<[E]%
 \\
-\>[13]{}(\Conid{IFunctor}\codeskip \Varid{f},\Conid{IFunctor}\codeskip \Varid{g}){}\<[E]%
+\>[13]{}(\Conid{IFunctor}\codeskip \Varid{iF},\Conid{IFunctor}\codeskip \Varid{iG}){}\<[E]%
 \\
-\>[13]{}\Rightarrow \Varid{f}:\prec:(\Varid{f}:\!\!+\!\!:\Varid{g})\codeskip \mathbf{where}{}\<[E]%
+\>[13]{}\Rightarrow \Varid{iF}:\prec:(\Varid{iF}:\!\!+\!\!:\Varid{iG})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{inj}{}\<[10]%
 \>[10]{}\mathrel{=}\Conid{L}{}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\mathbf{instance}\codeskip {}\<[13]%
-\>[13]{}(\Conid{IFunctor}\codeskip \Varid{f},\Conid{IFunctor}\codeskip \Varid{g},{}\<[E]%
+\>[13]{}(\Conid{IFunctor}\codeskip \Varid{iF},\Conid{IFunctor}\codeskip \Varid{iG},{}\<[E]%
 \\
-\>[13]{}\Conid{IFunctor}\codeskip \Varid{h},\Varid{f}:\prec:\Varid{g}){}\<[E]%
+\>[13]{}\Conid{IFunctor}\codeskip \Varid{iH},\Varid{iF}:\prec:\Varid{iG}){}\<[E]%
 \\
-\>[13]{}\Rightarrow \Varid{f}:\prec:(\Varid{h}:\!\!+\!\!:\Varid{g})\codeskip \mathbf{where}{}\<[E]%
+\>[13]{}\Rightarrow \Varid{iF}:\prec:(\Varid{iH}:\!\!+\!\!:\Varid{iG})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{inj}\mathrel{=}\Conid{R}\hsdot{\cdot }{.}\Varid{inj}{}\<[E]%
@@ -1277,48 +1318,33 @@ The notion of subtypes between functors, can be specified using the \ensuremath{
 \end{hscode}\resethooks
 
 Smart constructors are defined that allow for the \ensuremath{\Conid{L}}'s and \ensuremath{\Conid{R}}'s to be injected.
+Two examples are given, the other smart constructors can be found in Appendix~\ref{app:modular-smart-constructors}
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{36}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{empty}_{10}\mathbin{::}(\Conid{Empty}_{10}:\prec:\Varid{f})\Rightarrow \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
+\>[3]{}\Varid{satisfy}_{10}\mathbin{::}(\Conid{Satisfy}_{10}:\prec:\Varid{iF}){}\<[36]%
+\>[36]{}\Rightarrow (\Conid{Char}\to \Conid{Bool}){}\<[E]%
 \\
-\>[3]{}\Varid{empty}_{10}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip \Conid{Empty}_{10}){}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{pure}_{10}\mathbin{::}(\Conid{Pure}_{10}:\prec:\Varid{f})\Rightarrow \Varid{a}\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{pure}_{10}\codeskip \Varid{x}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Pure}_{10}\codeskip \Varid{x})){}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{satisfy}_{10}\mathbin{::}(\Conid{Satisfy}_{10}:\prec:\Varid{f}){}\<[35]%
-\>[35]{}\Rightarrow (\Conid{Char}\to \Conid{Bool}){}\<[E]%
-\\
-\>[35]{}\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Conid{Char}{}\<[E]%
+\>[3]{}\hsindent{32}{}\<[35]%
+\>[35]{}\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Conid{Char}{}\<[E]%
 \\
 \>[3]{}\Varid{satisfy}_{10}\codeskip \Varid{c}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Satisfy}_{10}\codeskip \Varid{c})){}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\Varid{try}_{10}\mathbin{::}(\Conid{Try}_{10}:\prec:\Varid{f})\Rightarrow \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
-\\
-\>[3]{}\Varid{try}_{10}\codeskip \Varid{px}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Try}_{10}\codeskip \Varid{px})){}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{ap}_{10}\mathbin{::}(\Conid{Ap}_{10}:\prec:\Varid{f})\Rightarrow \Conid{Fix}\codeskip \Varid{f}\codeskip (\Varid{a}\to \Varid{b})\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{b}{}\<[E]%
-\\
-\>[3]{}\Varid{ap}_{10}\codeskip \Varid{pf}\codeskip \Varid{px}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Ap}_{10}\codeskip \Varid{pf}\codeskip \Varid{px})){}\<[E]%
-\\[\blanklineskip]%
-\>[3]{}\Varid{or}_{10}\mathbin{::}(\Conid{Or}_{10}:\prec:\Varid{f})\Rightarrow \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
+\>[3]{}\Varid{or}_{10}\mathbin{::}(\Conid{Or}_{10}:\prec:\Varid{iF})\Rightarrow \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{or}_{10}\codeskip \Varid{px}\codeskip \Varid{py}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Or}_{10}\codeskip \Varid{px}\codeskip \Varid{py})){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-
-
 Now the smart constructors can be used to form an expression \ensuremath{\Varid{aorb}_{10}'}.
 The type contraints on this expression allow for \ensuremath{\Varid{f}} to be flexible, so long as \ensuremath{\Conid{Or}_{10}} and \ensuremath{\Conid{Satisfy}_{10}} are subtypes of the functor \ensuremath{\Varid{f}}.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{aorb}_{10}'\mathbin{::}(\Conid{Or}_{10}:\prec:\Varid{f},\Conid{Satisfy}_{10}:\prec:\Varid{f})\Rightarrow \Conid{Fix}\codeskip \Varid{f}\codeskip \Conid{Char}{}\<[E]%
+\>[3]{}\Varid{aorb}_{10}'\mathbin{::}(\Conid{Or}_{10}:\prec:\Varid{iF},\Conid{Satisfy}_{10}:\prec:\Varid{iF})\Rightarrow \Conid{Fix}\codeskip \Varid{iF}\codeskip \Conid{Char}{}\<[E]%
 \\
 \>[3]{}\Varid{aorb}_{10}'\mathrel{=}\Varid{satisfy}_{10}\codeskip (\equiv \text{\ttfamily{\textquotesingle}a\textquotesingle})\mathbin{\text{\`{}}\Varid{or}_{10}\text{\`{}}}\Varid{satisfy}_{10}\codeskip (\equiv \text{\ttfamily{\textquotesingle}b\textquotesingle}){}\<[E]%
 \ColumnHook
@@ -1336,15 +1362,15 @@ A type class can be defined that provides the algebra to fold each constructor.
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{13}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{class}\codeskip \Conid{IFunctor}\codeskip \Varid{f}\Rightarrow \Conid{SizeAlg}\codeskip \Varid{f}\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{class}\codeskip \Conid{IFunctor}\codeskip \Varid{iF}\Rightarrow \Conid{SizeAlg}\codeskip \Varid{iF}\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{sizeAlg}_{10}\mathbin{::}\Varid{f}\codeskip \Conid{Size}_{8}\codeskip \Varid{i}\to \Conid{Size}_{8}\codeskip \Varid{i}{}\<[E]%
+\>[5]{}\Varid{sizeAlg}_{10}\mathbin{::}\Varid{iF}\codeskip \Conid{Size}'\codeskip \Varid{a}\to \Conid{Size}'\codeskip \Varid{a}{}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\mathbf{instance}\codeskip {}\<[13]%
-\>[13]{}(\Conid{SizeAlg}\codeskip \Varid{f},\Conid{SizeAlg}\codeskip \Varid{g}){}\<[E]%
+\>[13]{}(\Conid{SizeAlg}\codeskip \Varid{iF},\Conid{SizeAlg}\codeskip \Varid{iG}){}\<[E]%
 \\
-\>[13]{}\Rightarrow \Conid{SizeAlg}\codeskip (\Varid{f}:\!\!+\!\!:\Varid{g})\codeskip \mathbf{where}{}\<[E]%
+\>[13]{}\Rightarrow \Conid{SizeAlg}\codeskip (\Varid{iF}:\!\!+\!\!:\Varid{iG})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{sizeAlg}_{10}\codeskip (\Conid{L}\codeskip \Varid{x})\mathrel{=}\Varid{sizeAlg}_{10}\codeskip \Varid{x}{}\<[E]%
@@ -1378,13 +1404,13 @@ Take calculating the size of the parser \ensuremath{\Varid{aorb}_{10}'}, only th
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{18}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{size}_{10}\mathbin{::}\Conid{SizeAlg}\codeskip \Varid{f}\Rightarrow \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}\to \Conid{Size}_{8}\codeskip \Varid{a}{}\<[E]%
+\>[3]{}\Varid{size}_{10}\mathbin{::}\Conid{SizeAlg}\codeskip \Varid{iF}\Rightarrow \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}\to \Conid{Size}'\codeskip \Varid{a}{}\<[E]%
 \\
 \>[3]{}\Varid{size}_{10}\mathrel{=}\Varid{cata}\codeskip \Varid{sizeAlg}_{10}{}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\Varid{eval}\mathbin{::}\Conid{Size}{}\<[E]%
 \\
-\>[3]{}\Varid{eval}\mathrel{=}\Varid{coerce}\codeskip {}\<[18]%
+\>[3]{}\Varid{eval}\mathrel{=}\Varid{unSize}\codeskip {}\<[18]%
 \>[18]{}(\Varid{size}_{10}\codeskip (\Varid{aorb}_{10}'\mathbin{::}({}\<[E]%
 \\
 \>[18]{}\Conid{Fix}\codeskip (\Conid{Or}_{10}:\!\!+\!\!:\Conid{Satisfy}_{10}))\codeskip \Conid{Char})){}\<[E]%
@@ -1393,14 +1419,17 @@ Take calculating the size of the parser \ensuremath{\Varid{aorb}_{10}'}, only th
 
 The type of \ensuremath{\Varid{aorb}_{10}'} is required to be specified.
 This is so that the compiler knows the top level functor being used and the constructors included in it.
-There could possibly an error in the paper here as it uses \ensuremath{\Conid{Circuit}_{11}}.
-This requires that the \ensuremath{\Conid{WidthAlg}_{11}} instances be defined for all constructors in \ensuremath{\Conid{Circuit}_{11}}, however, only \ensuremath{\Conid{Fan}_{11}} and \ensuremath{\Conid{Stretch}_{11}} have been.
+There could possibly an error in the paper here, as it states that only instances for \ensuremath{\Conid{Fan}_{11}} and \ensuremath{\Conid{Stretch}_{11}} need to be defined.
+However, it sets the type for \ensuremath{\Varid{stretchfan}} to be \ensuremath{\Conid{Circuit}_{11}}.
+This requires that the \ensuremath{\Conid{WidthAlg}_{11}} instances be defined for all constructors in \ensuremath{\Conid{Circuit}_{11}}.
 To rectify this type error \ensuremath{\Varid{stretchfan}} should be given the type \ensuremath{\Varid{stretchfan}\mathbin{::}\Conid{Fix}\codeskip (\Conid{Fan}_{11}:\!\!+\!\!:\Conid{Stretch}_{11})}.
 
 
+
 \section{Conclusion}
-This overview has walked through the techniques described in the paper and applied them to a typed Domain Specific Langugae.
-It aims to highlight the correspondence of shallow embeddings to algebras of deep embeddings.
+This overview has walked through the techniques described in the paper and applied them to a previously unconsidered case - typed DSLs.
+This now allows the techniques in the paper to be taken advantage of in typed DSLs such as parser combinators.
+This is done through the use of an \ensuremath{\Conid{IFunctor}} and special instances of \ensuremath{\Conid{Fix}} and \ensuremath{\Varid{cata}}.
 
 
 \bibliography{biblo}
@@ -1409,45 +1438,183 @@ It aims to highlight the correspondence of shallow embeddings to algebras of dee
 \section{Appendix}
 
 
+\subsection{Shallow Embedding of \ensuremath{\Varid{size}}}
+\label{app:shallow-size}
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[3]{}\mathbf{type}\codeskip \Conid{Parser}_{3}\codeskip \Varid{a}\mathrel{=}\Conid{Int}{}\<[E]%
 \\
-\>[3]{}\Varid{pure}_{3}\codeskip \anonymous \mathrel{=}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{pure}_{3}\codeskip {}\<[13]%
+\>[13]{}\anonymous {}\<[16]%
+\>[16]{}\mathrel{=}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{satisfy}_{3}\codeskip \anonymous \mathrel{=}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{satisfy}_{3}\codeskip {}\<[13]%
+\>[13]{}\anonymous {}\<[16]%
+\>[16]{}\mathrel{=}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{empty}_{3}\mathrel{=}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{empty}_{3}{}\<[16]%
+\>[16]{}\mathrel{=}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{try}_{3}\codeskip \Varid{px}\mathrel{=}\Varid{px}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{try}_{3}\codeskip {}\<[9]%
+\>[9]{}\Varid{px}{}\<[16]%
+\>[16]{}\mathrel{=}\Varid{px}{}\<[22]%
+\>[22]{}\mathbin{+}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{ap}_{3}\codeskip \Varid{pf}\codeskip \Varid{px}\mathrel{=}\Varid{pf}\mathbin{+}\Varid{pf}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{ap}_{3}\codeskip {}\<[9]%
+\>[9]{}\Varid{pf}\codeskip \Varid{px}{}\<[16]%
+\>[16]{}\mathrel{=}\Varid{pf}{}\<[22]%
+\>[22]{}\mathbin{+}\Varid{px}{}\<[28]%
+\>[28]{}\mathbin{+}\mathrm{1}{}\<[E]%
 \\
-\>[3]{}\Varid{or}_{3}\codeskip \Varid{px}\codeskip \Varid{py}\mathrel{=}\Varid{px}\mathbin{+}\Varid{py}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[3]{}\Varid{or}_{3}\codeskip {}\<[9]%
+\>[9]{}\Varid{px}\codeskip \Varid{py}{}\<[16]%
+\>[16]{}\mathrel{=}\Varid{px}{}\<[22]%
+\>[22]{}\mathbin{+}\Varid{py}{}\<[28]%
+\>[28]{}\mathbin{+}\mathrm{1}{}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\Varid{size}_{3}\mathbin{::}\Conid{Parser}_{3}\codeskip \Varid{a}\to \Conid{Size}{}\<[E]%
 \\
 \>[3]{}\Varid{size}_{3}\mathrel{=}\Varid{id}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+\subsection{\ensuremath{\Conid{IFunctor}} instance of \ensuremath{\Conid{ParserF}}}
+\label{app:ifunctor-parserf}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{34}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{38}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{42}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbf{instance}\codeskip \Conid{IFunctor}\codeskip \Conid{ParserF}\codeskip \mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\codeskip \anonymous \codeskip \Conid{EmptyF}{}\<[26]%
+\>[26]{}\mathrel{=}\Conid{EmptyF}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\codeskip \anonymous \codeskip (\Conid{PureF}\codeskip \Varid{x}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{PureF}\codeskip {}\<[38]%
+\>[38]{}\Varid{x}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\codeskip \anonymous \codeskip (\Conid{SatisfyF}\codeskip \Varid{c}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{SatisfyF}\codeskip {}\<[38]%
+\>[38]{}\Varid{c}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{TryF}\codeskip \Varid{px}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{TryF}\codeskip {}\<[34]%
+\>[34]{}(\Varid{f}\codeskip \Varid{px}){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{ApF}\codeskip \Varid{pf}\codeskip \Varid{px}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{ApF}\codeskip {}\<[34]%
+\>[34]{}(\Varid{f}\codeskip \Varid{pf})\codeskip {}\<[42]%
+\>[42]{}(\Varid{f}\codeskip \Varid{px}){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{OrF}\codeskip \Varid{px}\codeskip \Varid{py}){}\<[26]%
+\>[26]{}\mathrel{=}\Conid{OrF}\codeskip {}\<[34]%
+\>[34]{}(\Varid{f}\codeskip \Varid{px})\codeskip {}\<[42]%
+\>[42]{}(\Varid{f}\codeskip \Varid{py}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Constructors for a Parameterized Shallow Embedding}
+\label{app:parser7-constructors}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{empty}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{empty}_{7}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip \Conid{EmptyF}){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{pure}_{7}\mathbin{::}\Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{pure}_{7}\codeskip \Varid{x}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{PureF}\codeskip \Varid{x})){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{try}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip \Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{try}_{7}\codeskip \Varid{px}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{TryF}\codeskip (\Varid{unP}_{7}\codeskip \Varid{px}\codeskip \Varid{h}))){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{ap}_{7}\mathbin{::}\Conid{Parser}_{7}\codeskip (\Varid{a}\to \Varid{b})\to \Conid{Parser}_{7}\codeskip \Varid{a}\to \Conid{Parser}_{7}\codeskip \Varid{b}{}\<[E]%
+\\
+\>[3]{}\Varid{ap}_{7}\codeskip \Varid{pf}\codeskip \Varid{px}\mathrel{=}\Conid{P}_{7}\codeskip (\lambda \Varid{h}\to \Varid{h}\codeskip (\Conid{ApF}\codeskip (\Varid{unP}_{7}\codeskip \Varid{pf}\codeskip \Varid{h})\codeskip (\Varid{unP}_{7}\codeskip \Varid{px}\codeskip \Varid{h}))){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Converting from Deep to a Parameterized Shallow Embedding}
+\label{app:shallowalg}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{shallowAlg}\mathbin{::}\Conid{ParserAlg}\codeskip \Conid{Parser}_{7}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{shallowAlg}\codeskip \Conid{EmptyF}{}\<[28]%
+\>[28]{}\mathrel{=}\Varid{empty}_{7}{}\<[E]%
+\\
+\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{PureF}\codeskip \Varid{x}){}\<[28]%
+\>[28]{}\mathrel{=}\Varid{pure}_{7}\codeskip \Varid{x}{}\<[E]%
+\\
+\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{SatisfyF}\codeskip \Varid{c}){}\<[28]%
+\>[28]{}\mathrel{=}\Varid{satisfy}_{7}\codeskip \Varid{c}{}\<[E]%
+\\
+\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{TryF}\codeskip \Varid{px}){}\<[28]%
+\>[28]{}\mathrel{=}\Varid{try}_{7}\codeskip \Varid{px}{}\<[E]%
+\\
+\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{ApF}\codeskip \Varid{pf}\codeskip \Varid{px}){}\<[28]%
+\>[28]{}\mathrel{=}\Varid{ap}_{7}\codeskip \Varid{pf}\codeskip \Varid{px}{}\<[E]%
+\\
+\>[3]{}\Varid{shallowAlg}\codeskip (\Conid{OrF}\codeskip \Varid{px}\codeskip \Varid{py}){}\<[28]%
+\>[28]{}\mathrel{=}\Varid{or}_{7}\codeskip \Varid{px}\codeskip \Varid{py}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Datatypes and IFunctor Instances for a Modular Interpretation}
+\label{app:modular-dtypes-ifunctors}
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\mathbf{class}\codeskip \Conid{IFunctor}\codeskip \Varid{f}\codeskip \mathbf{where}{}\<[E]%
+\>[3]{}\mathbf{data}\codeskip \Conid{Empty}_{10}\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\mathbin{::}(\forall \Varid{i}\hsforall \hsdot{\cdot }{.}\Varid{a}\codeskip \Varid{i}\to \Varid{b}\codeskip \Varid{i})\to \Varid{f}\codeskip \Varid{a}\codeskip \Varid{i}\to \Varid{f}\codeskip \Varid{b}\codeskip \Varid{i}{}\<[E]%
+\>[5]{}\Conid{Empty}_{10}\mathbin{::}\Conid{Empty}_{10}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\mathbf{newtype}\codeskip \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{a}\mathrel{=}\Conid{In}\codeskip (\Varid{f}\codeskip (\Conid{Fix}\codeskip \Varid{f})\codeskip \Varid{a}){}\<[E]%
+\>[3]{}\mathbf{data}\codeskip \Conid{Pure}_{10}\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
 \\
-\>[3]{}\Varid{cata}\mathbin{::}\Conid{IFunctor}\codeskip \Varid{f}\Rightarrow (\forall \Varid{i}\hsforall \hsdot{\cdot }{.}\Varid{f}\codeskip \Varid{a}\codeskip \Varid{i}\to \Varid{a}\codeskip \Varid{i})\to \Conid{Fix}\codeskip \Varid{f}\codeskip \Varid{i}\to \Varid{a}\codeskip \Varid{i}{}\<[E]%
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Pure}_{10}\mathbin{::}\Varid{a}\to \Conid{Pure}_{10}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\mathbf{data}\codeskip \Conid{Satisfy}_{10}\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
 \\
-\>[3]{}\Varid{cata}\codeskip \Varid{alg}\codeskip (\Conid{In}\codeskip \Varid{x})\mathrel{=}\Varid{alg}\codeskip (\Varid{imap}\codeskip (\Varid{cata}\codeskip \Varid{alg})\codeskip \Varid{x}){}\<[E]%
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Satisfy}_{10}\mathbin{::}(\Conid{Char}\to \Conid{Bool})\to \Conid{Satisfy}_{10}\codeskip \Varid{f}\codeskip \Conid{Char}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\mathbf{data}\codeskip \Conid{Try}_{10}\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Try}_{10}\mathbin{::}\Varid{f}\codeskip \Varid{a}\to \Conid{Try}_{10}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\mathbf{data}\codeskip \Conid{Or}_{10}\codeskip (\Varid{f}\mathbin{::}\mathbin{*}\to \mathbin{*})\codeskip (\Varid{a}\mathbin{::}\mathbin{*})\codeskip \mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Conid{Or}_{10}\mathbin{::}\Varid{f}\codeskip \Varid{a}\to \Varid{f}\codeskip \Varid{a}\to \Conid{Or}_{10}\codeskip \Varid{f}\codeskip \Varid{a}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 \begin{hscode}\SaveRestoreHook
@@ -1475,16 +1642,37 @@ It aims to highlight the correspondence of shallow embeddings to algebras of dee
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{Try}_{10}\codeskip \Varid{px})\mathrel{=}\Conid{Try}_{10}\mathbin{\$}\Varid{f}\codeskip \Varid{px}{}\<[E]%
 \\[\blanklineskip]%
-\>[3]{}\mathbf{instance}\codeskip \Conid{IFunctor}\codeskip \Conid{Ap}_{10}\codeskip \mathbf{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{Ap}_{10}\codeskip \Varid{pf}\codeskip \Varid{px})\mathrel{=}\Conid{Ap}_{10}\codeskip (\Varid{f}\codeskip \Varid{pf})\codeskip (\Varid{f}\codeskip \Varid{px}){}\<[E]%
-\\[\blanklineskip]%
 \>[3]{}\mathbf{instance}\codeskip \Conid{IFunctor}\codeskip \Conid{Or}_{10}\codeskip \mathbf{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{imap}\codeskip \Varid{f}\codeskip (\Conid{Or}_{10}\codeskip \Varid{px}\codeskip \Varid{py})\mathrel{=}\Conid{Or}_{10}\codeskip (\Varid{f}\codeskip \Varid{px})\codeskip (\Varid{f}\codeskip \Varid{py}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+\subsection{Smart Constructors to Inject \ensuremath{\Conid{L}} and \ensuremath{\Conid{R}}'s}
+\label{app:modular-smart-constructors}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{empty}_{10}\mathbin{::}(\Conid{Empty}_{10}:\prec:\Varid{iF})\Rightarrow \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{empty}_{10}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip \Conid{Empty}_{10}){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{pure}_{10}\mathbin{::}(\Conid{Pure}_{10}:\prec:\Varid{iF})\Rightarrow \Varid{a}\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{pure}_{10}\codeskip \Varid{x}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Pure}_{10}\codeskip \Varid{x})){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{try}_{10}\mathbin{::}(\Conid{Try}_{10}:\prec:\Varid{iF})\Rightarrow \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}{}\<[E]%
+\\
+\>[3]{}\Varid{try}_{10}\codeskip \Varid{px}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Try}_{10}\codeskip \Varid{px})){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\Varid{ap}_{10}\mathbin{::}(\Conid{Ap}_{10}:\prec:\Varid{iF})\Rightarrow \Conid{Fix}\codeskip \Varid{iF}\codeskip (\Varid{a}\to \Varid{b})\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{a}\to \Conid{Fix}\codeskip \Varid{iF}\codeskip \Varid{b}{}\<[E]%
+\\
+\>[3]{}\Varid{ap}_{10}\codeskip \Varid{pf}\codeskip \Varid{px}\mathrel{=}\Conid{In}\codeskip (\Varid{inj}\codeskip (\Conid{Ap}_{10}\codeskip \Varid{pf}\codeskip \Varid{px})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+
+
 
 \end{document}
